@@ -2,11 +2,13 @@
 
 [English](README.md) | 中文
 
-DeepSeek Harness 的 Electron 桌面预览版。它拥有应用窗口，并在操作系统分配的回环端口上监督现有 `dsh web` profile，因此桌面视图与浏览器应用使用相同的 Host 组合、Client 插件、会话数据、工具和 Web UI。
+面向 DeepSeek Harness 的跨平台 Electron 桌面预览应用。它持有应用窗口，并在操作系统分配的回环端口上监督现有的 `dsh web` profile，因此桌面视图与浏览器应用使用相同的 Host 组合、Client 插件、会话数据、工具和 Web UI。
+
+源码模式支持 macOS、Linux 和 Windows。当前发布的安装包是未签名的 Apple 芯片 macOS DMG；Linux 和 Windows 安装包尚未发布。
 
 这个独立维护的社区应用不是 DeepSeek 官方发行版。它构建于 DeepSeek Harness workspace 内，因此保留上游 `@deepseek-ai` 包名；该名称表示源码兼容性，不代表本仓库通过 NPM 发布。上游归属说明见[仓库概述](../../README.md)。
 
-## 在 macOS 上安装
+## 构建 macOS DMG
 
 在 Apple 芯片 macOS 上，从仓库检出构建应用与未签名 DMG：
 
@@ -56,7 +58,7 @@ Electron 进程只拥有一棵隔离的 Harness 进程树。它等到 Loader 停
 
 ## 已知限制与暂缓事项
 
-- **未签名的 Apple 芯片预览版**：DMG 只支持 macOS arm64，既无 Developer ID 签名也未公证；尚不包含 Intel macOS 与 Windows 安装包、自动更新和崩溃报告。
+- **未签名的 Apple 芯片预览版**：DMG 只支持 macOS arm64，既无 Developer ID 签名也未公证；尚不包含 Intel macOS、Linux 与 Windows 安装包、自动更新和崩溃报告。源码模式仍支持 macOS、Linux 和 Windows。
 - **回环 Web 载体**：预览版会打开本地 HTTP／WebSocket 监听，尚未实现规划中的 `file://` 加 IPC 载体。Host 信任栅栏可阻止浏览器 DNS rebinding，但不是针对本地进程的认证。
 - **不自动重启运行时**：Harness 子进程意外退出时会显示阻塞错误并关闭应用，而不会重建 Cordis 树。
 - **Windows 崩溃清理会明确失败**：普通关闭会在 CLI 根进程仍可标识其进程树时使用 `taskkill /T /F`。如果该根进程在清理前意外消失，Windows 没有进程组存活探针；未成功的 `taskkill` 会使关闭失败，而不会声称后代进程已消失。打包后的 Windows 应用可以用 Job Object 所有权替换这一限制。

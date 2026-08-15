@@ -4,13 +4,13 @@ English | [中文](README.zh.md)
 
 <p align="center"><img src="apps/desktop/assets/icon.png" alt="DSH Desktop icon" width="160"></p>
 
-DSH Desktop is an independently maintained macOS desktop application based on the source code of [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). It runs the upstream `dsh web` profile in a hardened Electron window and builds a self-contained unsigned DMG for Apple silicon.
+DSH Desktop is an independently maintained cross-platform desktop application based on the source code of [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). It runs the upstream `dsh web` profile in a hardened Electron window. The current release workflow builds a self-contained unsigned DMG for Apple silicon; source mode runs on macOS, Linux, and Windows.
 
 This repository is not an official DeepSeek release. The DeepSeek Harness product name, `@deepseek-ai` package namespace, and existing copyright notices identify the upstream project and remain in the source for attribution and compatibility.
 
 ## Developer preview
 
-DSH Desktop is a developer preview and may make compatibility-breaking changes. The current installer supports Apple-silicon macOS only.
+DSH Desktop is a developer preview and may make compatibility-breaking changes. The packaged installer currently supports Apple-silicon macOS only; source mode supports macOS, Linux, and Windows.
 
 ## Run
 
@@ -30,7 +30,7 @@ The command writes `apps/desktop/release/DeepSeek-Harness-<version>-arm64.dmg`. 
 
 ### Run from source
 
-After installing dependencies, build the repository and start the desktop application:
+After installing dependencies, build the repository and start the desktop application on macOS, Linux, or Windows:
 
 ```sh
 pnpm run build
@@ -43,11 +43,11 @@ The desktop application supervises the same local Harness profile, session data,
 
 This repository retains the complete DeepSeek Harness monorepo and Git history because `apps/desktop` consumes its workspace packages directly. The desktop-specific source lives under [`apps/desktop`](apps/desktop/README.md); its integration changes keep the existing CLI, Web profile, build, documentation, and runtime dependency graph aligned.
 
-DeepSeek Harness provides the agent harness, CLI, Web UI, plugin architecture, and `@deepseek-ai` packages. DSH Desktop adds Electron process ownership, application assets, macOS packaging, and packaged-application verification without forking the Harness runtime or Web composition.
+DeepSeek Harness provides the agent harness, CLI, Web UI, plugin architecture, and `@deepseek-ai` packages. DSH Desktop adds cross-platform Electron process ownership and application assets, plus macOS packaging and packaged-application verification, without forking the Harness runtime or Web composition.
 
 ## Security and limitations
 
-The macOS image has no Developer ID certificate signature and is not notarized. Gatekeeper may require Control-clicking the installed application and choosing Open. The current application uses an operating-system-assigned loopback HTTP/WebSocket port, has no auto-update or crash-reporting service, and does not include Intel macOS or Windows installers. The [desktop application reference](apps/desktop/README.md) documents the renderer security settings and process lifecycle.
+The macOS image has no Developer ID certificate signature and is not notarized. Gatekeeper may require Control-clicking the installed application and choosing Open. The current application uses an operating-system-assigned loopback HTTP/WebSocket port and has no auto-update or crash-reporting service. The repository does not yet publish Intel macOS, Linux, or Windows installers. The [desktop application reference](apps/desktop/README.md) documents the renderer security settings and process lifecycle.
 
 ## Community and support
 
