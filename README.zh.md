@@ -1,61 +1,58 @@
-# DeepSeek Harness
+# DSH Desktop
 
 [English](README.md) | 中文
 
-DeepSeek Harness（`dsh`）是由 [DeepSeek AI](https://deepseek.com) 开发的开源 agent harness（智能体框架）。
+<p align="center"><img src="apps/desktop/assets/icon.png" alt="DSH Desktop 图标" width="160"></p>
 
-它采用**一切皆插件**的架构，并由 [Cordis](https://github.com/cordiverse/cordis) 驱动，其设计参见论文 [_A Programming Paradigm for Spatiotemporal Composability_](https://github.com/cordiverse/paper)。
+DSH Desktop 是一个独立维护的 macOS 桌面应用，基于 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 源代码开发。它在经过安全加固的 Electron 窗口中运行上游 `dsh web` profile，并可为 Apple 芯片构建包含完整运行环境的未签名 DMG。
+
+本仓库不是 DeepSeek 官方发行版。源代码保留 DeepSeek Harness 产品名称、`@deepseek-ai` 包命名空间与现有版权声明，用于标明上游来源并保持兼容性。
 
 ## 开发者预览
 
-DeepSeek Harness 目前处于 _开发者预览_ 阶段，正在快速迭代。**未来将出现破坏兼容性的变更。**
+DSH Desktop 目前处于开发者预览阶段，可能发生破坏兼容性的变更。当前安装包仅支持 Apple 芯片 macOS。
 
 ## 运行
 
-### 通过 `npm` 运行
+### 构建 macOS DMG
 
-安装 `Node.js`，然后运行：
+请安装 Node.js `^22.19.0` 或 `>=24.0.0` 以及 Corepack，然后运行：
 
 ```sh
-npx @deepseek-ai/dsh web
+git clone https://github.com/tangf-ai/dsh-desktop.git
+cd dsh-desktop
+corepack enable
+pnpm install
+pnpm desktop:dmg
 ```
 
-该命令会启动 Web UI，默认地址为 `http://127.0.0.1:3080`。详见 [Web UI 指南](docs/user/guide/index.md)。
+该命令生成 `apps/desktop/release/DeepSeek-Harness-<version>-arm64.dmg`。应用包含 Node 运行时和生产依赖，因此安装后无需 Node、pnpm 或仓库检出即可运行。安装与验证细节见[桌面应用参考](apps/desktop/README.md)。
 
 ### 从源码运行
 
-如需从仓库源码运行：
+安装依赖后，请构建仓库并启动桌面应用：
 
 ```sh
-git clone https://github.com/deepseek-ai/deepseek-harness.git
-cd deepseek-harness
-pnpm install
 pnpm run build
-pnpm dsh web
+pnpm desktop
 ```
+
+桌面应用与 `dsh web` 使用相同的本地 Harness profile、会话数据、工具和 Web UI。
+
+## 与 DeepSeek Harness 的关系
+
+本仓库保留完整的 DeepSeek Harness monorepo 和 Git 历史，因为 `apps/desktop` 直接使用其中的 workspace 包。桌面应用专属源码位于 [`apps/desktop`](apps/desktop/README.md)；相关集成改动让现有 CLI、Web profile、构建、文档与运行时依赖图保持一致。
+
+DeepSeek Harness 提供 agent harness（智能体框架）、CLI（命令行界面）、Web UI、插件架构与 `@deepseek-ai` 包。DSH Desktop 增加 Electron 进程管理、应用资源、macOS 打包和已打包应用验证，不分叉 Harness 运行时或 Web 组合。
+
+## 安全与限制
+
+macOS 镜像没有 Developer ID 证书签名，也未经过公证。Gatekeeper 可能要求按住 Control 点击已安装应用并选择“打开”。当前应用使用操作系统分配的回环 HTTP/WebSocket 端口，不包含自动更新、崩溃报告服务、Intel macOS 安装包或 Windows 安装包。[桌面应用参考](apps/desktop/README.md)说明 renderer 安全设置与进程生命周期。
 
 ## 社区与支持
 
-- 欢迎通过 [GitHub Discussions](https://github.com/deepseek-ai/deepseek-harness/discussions) 提交反馈或 bug 报告。
-- 为你的插件仓库添加 [`dsh-plugin`](https://github.com/topics/dsh-plugin) 话题，便于被发现。
-- 欢迎加入 DeepSeek Harness 企微群：扫码添加企微小助手并填写入群问卷，完成后小助手会邀请你入群。
-
-<table>
-  <thead>
-    <tr>
-      <th align="center">企微小助手</th>
-      <th align="center">入群问卷</th>
-      <th align="center">微信公众号</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td align="center"><img src="assets/community-wecom-assistant.png" alt="DeepSeek Harness 企微小助手二维码" width="180" height="180"></td>
-      <td align="center"><a href="https://trtgsjkv6r.feishu.cn/share/base/form/shrcnIt5twSVdLGD52KJBckGCgg"><img src="assets/community-wecom-survey.png" alt="DeepSeek Harness 入群问卷二维码" width="180" height="180"></a></td>
-      <td align="center"><img src="assets/community-wechat-official-account.png" alt="DeepSeek Harness 团队微信公众号二维码" width="180" height="180"></td>
-    </tr>
-  </tbody>
-</table>
+- 请通过本仓库的 [GitHub Issues](https://github.com/tangf-ai/dsh-desktop/issues) 报告 DSH Desktop bug 或提交功能需求。
+- 与底层 Harness 项目有关的问题，请使用上游 [DeepSeek Harness Discussions](https://github.com/deepseek-ai/deepseek-harness/discussions)。
 
 ## 参与贡献
 
@@ -63,12 +60,10 @@ pnpm dsh web
 
 ## 开发
 
-请先阅读[开发指南](docs/development.md)与[架构文档](docs/architecture.md)。
-
-面向 agent：请遵循 [AGENTS.md](AGENTS.md)。
+请先阅读[开发指南](docs/development.md)与[架构文档](docs/architecture.md)。面向 agent：请遵循 [AGENTS.md](AGENTS.md)。
 
 ## 许可证
 
-[MIT](LICENSE)
+本仓库采用 [MIT 许可证](LICENSE)。DeepSeek Harness 原始代码保留 DeepSeek 版权声明，DSH Desktop 修改内容采用相同许可证发布。
 
 第三方依赖及其许可证见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。

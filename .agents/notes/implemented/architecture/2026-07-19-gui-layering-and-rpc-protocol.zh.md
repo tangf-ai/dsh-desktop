@@ -30,10 +30,10 @@ Status: implemented
 - `apps/` 作为对外导出的应用入口，可以由 Client / Host 混合组装。
     - `apps/web`（`dsh-web-frontend`）是 vite 应用：`dsh-client-web` 导出的壳 API 之上的一层薄 `main.ts`。
     - `apps/cli`（`@deepseek-ai/dsh`）分发命令：`dsh web` = Host + webserver + 构建出的 `dsh-web-frontend` dist；`dsh --profile headless` = [直接使用核心 Agent／Session 的入口](2026-08-09-headless-direct-core-entry-point.md)，不含 Host、HTTP 或浏览器层。
-    - 将来的 Electron 应用经由 IPC fetch 载体复用同一套 web client 包。
+    - `apps/desktop`（`@deepseek-ai/dsh-desktop`）是[桌面预览版](../feature/2026-08-15-electron-desktop-preview.md)：一个 Electron 生命周期所有者，其源码与打包形式都会在操作系统分配的回环端口上监督完整 Web profile。专用 IPC 载体仍不存在，因此已安装的 DMG 不是下文所述的无服务器桌面形态。
 
 ```
-apps/*  (applications: apps/web = vite app, apps/cli = bin dispatch)
+apps/*  (applications: web = vite, cli = bin dispatch, desktop = Electron preview)
   │ consume
   ▼
 packages/host/*                      packages/client/*
@@ -62,10 +62,10 @@ TypeScript 以 solution 根引用的**两个聚合 program** 检查（`tsconfig.
 |---|---|---|---|
 | 前置层 | `dsh-host-apiproxy` | TS/zod 定义 (api/)+ fetch 抽象 (fetch/：handler + 客户端基类) | 做简单、每个消费方都要；Node/浏览器皆可 import；协议内容见下文「消息协议」起各节；client 不得经 ctx 绕开 api |
 | 装配层 | `dsh-host-runtime` | 插件组合 + ApiProxy 集成 + web UI 插件挂载（覆盖八个 dsh.client 包的内存 Loader 树）；host 级配置归属地（defaults/persistenceRoot，将来用户 profile） | 装什么插件、给什么默认值只在这里定；壳不得改装配 |
-| 承载层 | `dsh-host-webserver` | Web HTTP 与 upgrade：静态服务 + `/api/*`→handler 转发 + WebSocket upgrade route + close 语义；插件 bundle 端点 + `__DSH_BOOT__` manifest（元数据清单）注入（由 web 插件注册表供给） | Web（浏览器访问）专用；零 workspace 依赖（注册表经结构注入到达）；Electron 不复用它 |
+| 承载层 | `dsh-host-webserver` | Web HTTP 与 upgrade：静态服务 + `/api/*`→handler 转发 + WebSocket upgrade route + close 语义；插件 bundle 端点 + `__DSH_BOOT__` manifest（元数据清单）注入（由 web 插件注册表供给） | 服务浏览器访问与桌面预览版；零 workspace 依赖（注册表经结构注入到达）；专用 IPC 桌面载体不复用它 |
 | client 库 | `dsh-client-ui-slots` / `dsh-client-web-react` / `dsh-client-ui-primitives` | slot 注册表核心 / ctx↔React 胶合 / 纯 React 原子组件 | 组件零 cordis 运行时依赖；由壳播种进 loader 模块表 |
 | client 插件 | `dsh-client-connection` / `dsh-client-runtime` / `dsh-client-ui-theme` / `dsh-client-i18n` / `dsh-client-ui-layout` / `dsh-client-ui-sidebar` / `dsh-client-ui-conversation` / `dsh-client-ui-trajectory` | 浏览器侧 cordis 插件树（wire 消费方、核心服务、主题、i18n、布局、侧栏、对话、轨迹）——见 Web 客户端架构笔记 | 双入口（node 半边=空 apply；实现在 `src/client/`）；消费面唯一经 ApiProxy |
-| 应用 | `@deepseek-ai/dsh`（apps/cli）+ `dsh-web-frontend`（apps/web，vite 应用） | bin 粗分发 + 每个应用一个拼装模块（web.ts / headless.ts）；vite 应用是 `dsh-client-web` 壳表面之上的薄 main | 各应用使用动态 import，因此不会互相加载；dist 定位等 workspace 知识留在 app |
+| 应用 | `@deepseek-ai/dsh`（apps/cli）+ `dsh-web-frontend`（apps/web）+ `@deepseek-ai/dsh-desktop`（apps/desktop） | bin 粗分发、Vite 入口与 Electron 预览版生命周期所有者 | 各应用不互相加载；dist、CLI 与加载页位置等 workspace 知识留在对应 app |
 
 #### 命名规则
 
@@ -77,7 +77,7 @@ TypeScript 以 solution 根引用的**两个聚合 program** 检查（`tsconfig.
 2. **在 `apps/` 下写拼装模块**：`startHost()` + 客户端子类 + 该应用私有的信号/打印/退出语义；混合体不建包，拼装写在 app 里。
 3. **需要 HTTP 承载才 import `dsh-host-webserver`**，否则零端口。
 
-现有两个应用保持这一区分：Web 应用挂载 Host、载体与浏览器组合，而 `dsh --profile headless` 挂载直接使用核心服务的 runner，不包含 Host、HTTP 或端口。ACP 类协议桥不遵循 client 载体清单：它把 core 暴露给外部生态，直接通过 `ctx.plugin(入口插件)` 挂载，不使用 fetch。
+各应用保持这一区分：Web profile 挂载 Host、载体与浏览器组合；桌面预览版在不改变其组合的前提下监督该完整 profile；`dsh --profile headless` 则挂载直接使用核心服务的 runner，不包含 Host、HTTP 或端口。ACP 类协议桥不遵循 client 载体清单：它把 core 暴露给外部生态，直接通过 `ctx.plugin(入口插件)` 挂载，不使用 fetch。
 
 ## 消息协议
 
