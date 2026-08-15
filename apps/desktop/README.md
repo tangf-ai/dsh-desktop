@@ -1,0 +1,63 @@
+# @deepseek-ai/dsh-desktop
+
+English | [中文](README.zh.md)
+
+Electron desktop preview for DeepSeek Harness. It owns the application window and supervises the existing `dsh web` profile on an operating-system-assigned loopback port, so the desktop view uses the same Host composition, Client plugins, session data, tools, and Web UI as the browser application.
+
+This independently maintained community application is not an official DeepSeek release. It retains the upstream `@deepseek-ai` package name because it is built inside the DeepSeek Harness workspace; the name identifies source compatibility, not an npm publication by this repository. See the [repository overview](../../README.md) for upstream attribution.
+
+## Install on macOS
+
+On Apple-silicon macOS, build the application and unsigned DMG from a repository checkout:
+
+```sh
+pnpm desktop:dmg
+```
+
+The command writes `apps/desktop/release/DeepSeek-Harness-<version>-arm64.dmg`. Open the image and drag `DeepSeek Harness.app` onto its Applications shortcut. The application contains its production dependency closure and a validated macOS arm64 Node runtime, so launching the installed app does not require a repository checkout, Node, pnpm, or an Electron download.
+
+This developer-preview image is deliberately unsigned and unnotarized. It contains no Developer ID certificate identity; macOS Mach-O files may still report linker-generated ad-hoc metadata. Gatekeeper may require Control-clicking the installed application and choosing Open. If quarantine still blocks a locally built artifact that you trust, remove that attribute explicitly:
+
+```sh
+xattr -dr com.apple.quarantine "/Applications/DeepSeek Harness.app"
+```
+
+`pnpm desktop:smoke:dmg` mounts the image read-only, verifies the bundled runtime and absence of a certificate identity, starts the packaged application, checks the live Electron security preferences, captures `.artifacts/desktop-dmg.png`, closes the app, and confirms that its loopback URL stops responding.
+
+## Run from source
+
+From a built repository checkout:
+
+```sh
+pnpm desktop
+```
+
+The root `pnpm run build` command builds this app together with the Host packages and Web frontend. `DSH_DESKTOP_CWD` selects the initial Harness working directory; source mode otherwise uses pnpm's invocation directory or the process working directory, while a Finder-launched packaged app uses the user's home directory. `DSH_DESKTOP_STARTUP_TIMEOUT_MS` changes the 60-second startup deadline and accepts values from 1 through 600000 milliseconds.
+
+After building, `pnpm desktop:smoke` runs a keyless real-application check on a machine with a graphical desktop. It starts an isolated Harness home, validates the rendered frame and live Electron security preferences, writes `.artifacts/desktop-preview.png`, closes the app, and verifies that the assigned loopback URL stops responding.
+
+The published source package also exposes `dsh-desktop`. Its Node launcher starts the package's Electron dependency and passes that same Node executable to the Electron main process, which then starts the installed `@deepseek-ai/dsh` CLI dependency without changing the native-module ABI.
+
+Source mode resolves its platform Electron executable lazily. The first source run needs network access unless the executable is already cached; `ELECTRON_MIRROR` selects an alternate download mirror when the default endpoint is unavailable. The DMG contains Electron and does not use this download path.
+
+## Security and lifecycle
+
+The child binds only `127.0.0.1` and requests port `0`, so the operating system selects an unused port. The Electron renderer has context isolation and sandboxing enabled, Node integration disabled, WebViews blocked, and top-level navigation restricted to that exact loopback origin. HTTP and HTTPS links outside the application open through the operating system browser.
+
+The Electron process owns exactly one isolated Harness process tree. It waits for the Loader-settled `dsh web:` readiness line before navigating away from the loading page and reports startup or unexpected runtime exits. On POSIX, shutdown sends SIGTERM and then bounded SIGKILL to the entire process group and waits for group exit; on Windows it uses `taskkill /T /F` because Node signals cannot provide a catchable graceful tier. The outer Node launcher separately bounds Electron shutdown, so either process layer can reach quiescence when its child stops responding.
+
+## Model Experience
+
+The desktop preview runs the exact Web profile, including its model-visible surface context. It adds no prompt, tool, or session event of its own.
+
+#### KV Cache effect
+
+None beyond the existing Web profile; the Electron lifecycle owner does not assemble provider requests.
+
+## Known Limitations and Deferred Work
+
+- **Unsigned Apple-silicon preview** — the DMG supports macOS arm64 only and is neither Developer ID signed nor notarized; Intel macOS and Windows installers, auto-update, and crash reporting are not included.
+- **Loopback Web carrier** — the preview opens a local HTTP/WebSocket listener and does not yet implement the planned `file://` plus IPC carrier. The Host trust fence prevents browser DNS rebinding but is not local-process authentication.
+- **No automatic runtime restart** — an unexpected Harness child exit produces a blocking error and closes the application instead of reconstructing the Cordis tree.
+- **Windows crash cleanup is fail-loud** — ordinary shutdown uses `taskkill /T /F` while the CLI root still identifies its tree. If that root disappears unexpectedly before cleanup, Windows provides no group-liveness probe; an unsuccessful `taskkill` makes shutdown fail instead of claiming that descendants are gone. A packaged Windows application can replace this limit with Job Object ownership.
+- **No desktop-native capability providers** — directory selection and path opening continue through the Web profile's existing Host providers rather than Electron dialog APIs.

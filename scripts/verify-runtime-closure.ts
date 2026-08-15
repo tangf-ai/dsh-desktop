@@ -26,54 +26,15 @@ const { values } = parseArgs({
   args: process.argv.slice(2),
   options: { manifest: { type: 'string' } },
 })
-const runtimeManifestPath = resolve(root, values.manifest ?? 'python/sdk-runtime/package.json')
-const runtimeManifest = await loadManifest(runtimeManifestPath)
-const runtimeName = runtimeManifest.name ?? 'python/sdk-runtime'
 const workspace = await loadWorkspacePackages()
-const runtimeDependencies = runtimeManifest.dependencies ?? {}
-const parents = new Map<string, string | undefined>()
-const queue: string[] = []
+const manifests = values.manifest === undefined
+  ? ['python/sdk-runtime/package.json', 'apps/desktop/package.json']
+  : [values.manifest]
 
-for (const dependency of Object.keys(runtimeDependencies).sort()) {
-  if (!workspace.has(dependency)) continue
-  parents.set(dependency, undefined)
-  queue.push(dependency)
-}
-
-const failures: string[] = []
-for (let index = 0; index < queue.length; index += 1) {
-  const packageName = queue[index]
-  if (packageName === undefined) continue
-  const current = workspace.get(packageName)
-  if (current === undefined) continue
-  const peers = current.manifest.peerDependencies ?? {}
-  const peerMeta = current.manifest.peerDependenciesMeta ?? {}
-  for (const peer of Object.keys(peers).sort()) {
-    if (!workspace.has(peer) || peerMeta[peer]?.optional === true) continue
-    if (runtimeDependencies[peer]?.startsWith('workspace:') === true) continue
-    failures.push(`${formatChain(runtimeName, packageName, parents)} -> ${peer}`)
-  }
-  const dependencies = {
-    ...current.manifest.dependencies,
-    ...current.manifest.optionalDependencies,
-  }
-  for (const dependency of Object.keys(dependencies).sort()) {
-    if (!workspace.has(dependency) || parents.has(dependency)) continue
-    parents.set(dependency, packageName)
-    queue.push(dependency)
-  }
-}
-
-if (failures.length > 0) {
-  console.error('verify-runtime-closure: required workspace peers are missing from python/sdk-runtime dependencies:')
-  for (const failure of failures) console.error(`  ${failure}`)
-  process.exit(1)
-}
-
-console.log(`verify-runtime-closure: ${queue.length} workspace packages form a closed runtime dependency graph.`)
+for (const manifest of manifests) await verifyRuntimeManifest(resolve(root, manifest), workspace)
 
 async function loadWorkspacePackages(): Promise<Map<string, WorkspacePackage>> {
-  const paths = globSync(['packages/*/*/package.json', 'vendor/*/package.json'], { cwd: root })
+  const paths = globSync(['apps/*/package.json', 'packages/*/*/package.json', 'vendor/*/package.json'], { cwd: root })
     .sort()
     .map(relative => resolve(root, relative))
   const result = new Map<string, WorkspacePackage>()
@@ -82,6 +43,56 @@ async function loadWorkspacePackages(): Promise<Map<string, WorkspacePackage>> {
     if (manifest.name !== undefined) result.set(manifest.name, { path, manifest })
   }
   return result
+}
+
+async function verifyRuntimeManifest(
+  runtimeManifestPath: string,
+  workspace: ReadonlyMap<string, WorkspacePackage>,
+): Promise<void> {
+  const runtimeManifest = await loadManifest(runtimeManifestPath)
+  const runtimeName = runtimeManifest.name ?? runtimeManifestPath
+  const runtimeDependencies = runtimeManifest.dependencies ?? {}
+  const parents = new Map<string, string | undefined>()
+  const queue: string[] = []
+
+  for (const dependency of Object.keys(runtimeDependencies).sort()) {
+    if (!workspace.has(dependency)) continue
+    parents.set(dependency, undefined)
+    queue.push(dependency)
+  }
+
+  const failures: string[] = []
+  for (let index = 0; index < queue.length; index += 1) {
+    const packageName = queue[index]
+    if (packageName === undefined) continue
+    const current = workspace.get(packageName)
+    if (current === undefined) continue
+    const peers = current.manifest.peerDependencies ?? {}
+    const peerMeta = current.manifest.peerDependenciesMeta ?? {}
+    for (const peer of Object.keys(peers).sort()) {
+      if (!workspace.has(peer) || peerMeta[peer]?.optional === true) continue
+      if (runtimeDependencies[peer]?.startsWith('workspace:') === true) continue
+      failures.push(`${formatChain(runtimeName, packageName, parents)} -> ${peer}`)
+    }
+    const dependencies = {
+      ...current.manifest.dependencies,
+      ...current.manifest.optionalDependencies,
+    }
+    for (const dependency of Object.keys(dependencies).sort()) {
+      if (!workspace.has(dependency) || parents.has(dependency)) continue
+      parents.set(dependency, packageName)
+      queue.push(dependency)
+    }
+  }
+
+  if (failures.length > 0) {
+    console.error(`verify-runtime-closure: required workspace peers are missing from ${runtimeName} dependencies:`)
+    for (const failure of failures) console.error(`  ${failure}`)
+    process.exitCode = 1
+    return
+  }
+
+  console.log(`verify-runtime-closure: ${runtimeName} closes over ${String(queue.length)} workspace packages.`)
 }
 
 async function loadManifest(path: string): Promise<PackageManifest> {

@@ -1,0 +1,30 @@
+appId: ai.deepseek.harness.desktop
+productName: DeepSeek Harness
+asar: true
+compression: maximum
+electronDist: electron-dist
+npmRebuild: false
+directories:
+  app: app
+  output: output
+files:
+  - lib/types/**/*
+  - assets/**/*
+  - package.json
+extraResources:
+  - from: .
+    to: .
+    filter:
+      - runtime/**/*
+      - legal/**/*
+mac:
+  category: public.app-category.developer-tools
+  icon: app/assets/icon.icns
+  identity: null
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  minimumSystemVersion: "11.0"
+  target:
+    - target: dir
+      arch:
+        - arm64
