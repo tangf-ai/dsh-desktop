@@ -2,11 +2,13 @@
 
 English | [中文](README.zh.md)
 
-Electron desktop preview for DeepSeek Harness. It owns the application window and supervises the existing `dsh web` profile on an operating-system-assigned loopback port, so the desktop view uses the same Host composition, Client plugins, session data, tools, and Web UI as the browser application.
+Cross-platform Electron desktop preview for DeepSeek Harness. It owns the application window and supervises the existing `dsh web` profile on an operating-system-assigned loopback port, so the desktop view uses the same Host composition, Client plugins, session data, tools, and Web UI as the browser application.
+
+Source mode runs on macOS, Linux, and Windows. The current packaged distribution is an unsigned Apple-silicon macOS DMG; Linux and Windows installers are not published yet.
 
 This independently maintained community application is not an official DeepSeek release. It retains the upstream `@deepseek-ai` package name because it is built inside the DeepSeek Harness workspace; the name identifies source compatibility, not an npm publication by this repository. See the [repository overview](../../README.md) for upstream attribution.
 
-## Install on macOS
+## Build the macOS DMG
 
 On Apple-silicon macOS, build the application and unsigned DMG from a repository checkout:
 
@@ -56,7 +58,7 @@ None beyond the existing Web profile; the Electron lifecycle owner does not asse
 
 ## Known Limitations and Deferred Work
 
-- **Unsigned Apple-silicon preview** — the DMG supports macOS arm64 only and is neither Developer ID signed nor notarized; Intel macOS and Windows installers, auto-update, and crash reporting are not included.
+- **Unsigned Apple-silicon preview** — the DMG supports macOS arm64 only and is neither Developer ID signed nor notarized; Intel macOS, Linux, and Windows installers, auto-update, and crash reporting are not included. Source mode remains available on macOS, Linux, and Windows.
 - **Loopback Web carrier** — the preview opens a local HTTP/WebSocket listener and does not yet implement the planned `file://` plus IPC carrier. The Host trust fence prevents browser DNS rebinding but is not local-process authentication.
 - **No automatic runtime restart** — an unexpected Harness child exit produces a blocking error and closes the application instead of reconstructing the Cordis tree.
 - **Windows crash cleanup is fail-loud** — ordinary shutdown uses `taskkill /T /F` while the CLI root still identifies its tree. If that root disappears unexpectedly before cleanup, Windows provides no group-liveness probe; an unsuccessful `taskkill` makes shutdown fail instead of claiming that descendants are gone. A packaged Windows application can replace this limit with Job Object ownership.
