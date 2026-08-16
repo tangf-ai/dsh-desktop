@@ -1,5 +1,6 @@
 import { execFileSync, spawn } from 'node:child_process'
 import { access, chmod, cp, mkdir, mkdtemp, readFile, readdir, readlink, rm, symlink, unlink, writeFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -9,6 +10,7 @@ export const repositoryRoot = resolve(desktopRoot, '../..')
 export const releaseRoot = join(desktopRoot, 'release')
 export const electronBuilderCli = join(desktopRoot, 'node_modules', 'electron-builder', 'out', 'cli', 'cli.js')
 export const manifest = JSON.parse(await readFile(join(desktopRoot, 'package.json'), 'utf8'))
+const electronPackageRoot = dirname(createRequire(import.meta.url).resolve('electron/package.json'))
 
 /**
  * Assemble the self-contained desktop application input for one native host.
@@ -45,7 +47,7 @@ export async function stageDesktopApplication(target) {
     await cp(join(desktopRoot, 'lib', 'types'), join(appRoot, 'lib', 'types'), { recursive: true })
     await cp(join(desktopRoot, 'assets'), join(appRoot, 'assets'), { recursive: true })
     await cp(join(desktopRoot, 'electron-builder.yml'), join(stagingRoot, 'electron-builder.yml'))
-    const sourceElectronDist = join(desktopRoot, 'node_modules', 'electron', 'dist')
+    const sourceElectronDist = join(electronPackageRoot, 'dist')
     const stagedElectronDist = join(stagingRoot, 'electron-dist')
     if (process.platform === 'win32') {
       await cp(sourceElectronDist, stagedElectronDist, { recursive: true })
