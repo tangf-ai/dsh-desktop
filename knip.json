@@ -5,8 +5,12 @@
   ],
   "ignoreBinaries": [
     "bwrap",
+    "codesign",
+    "hdiutil",
     "icacls",
     "musl-gcc",
+    "otool",
+    "powershell.exe",
     "python3",
     "sandbox-exec",
     "tar",
@@ -738,6 +742,12 @@
       ],
       "ignoreDependencies": [
         "@deepseek-ai/.+"
+      ]
+    },
+    "apps/desktop": {
+      "ignoreDependencies": [
+        "@deepseek-ai/.+",
+        "electron-builder"
       ]
     },
     "packages/client/modules": {

@@ -4,13 +4,13 @@ English | [中文](README.zh.md)
 
 <p align="center"><img src="apps/desktop/assets/icon.png" alt="DSH Desktop icon" width="160"></p>
 
-DSH Desktop is an independently maintained cross-platform desktop application based on the source code of [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). It runs the upstream `dsh web` profile in a hardened Electron window. The current release workflow builds a self-contained unsigned DMG for Apple silicon; source mode runs on macOS, Linux, and Windows.
+DSH Desktop is an independently maintained cross-platform desktop application based on the source code of [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness). It runs the upstream `dsh web` profile in a hardened Electron window. The release workflow builds self-contained unsigned installers for Apple-silicon macOS and Windows x64; source mode runs on macOS, Linux, and Windows.
 
 This repository is not an official DeepSeek release. The DeepSeek Harness product name, `@deepseek-ai` package namespace, and existing copyright notices identify the upstream project and remain in the source for attribution and compatibility.
 
 ## Developer preview
 
-DSH Desktop is a developer preview and may make compatibility-breaking changes. The packaged installer currently supports Apple-silicon macOS only; source mode supports macOS, Linux, and Windows.
+DSH Desktop is a developer preview and may make compatibility-breaking changes. Packaged installers support Apple-silicon macOS and Windows x64; source mode supports macOS, Linux, and Windows.
 
 ## Run
 
@@ -28,6 +28,16 @@ pnpm desktop:dmg
 
 The command writes `apps/desktop/release/DeepSeek-Harness-<version>-arm64.dmg`. The application contains its Node runtime and production dependencies, so the installed application does not require Node, pnpm, or a repository checkout. See the [desktop application reference](apps/desktop/README.md) for installation and verification details.
 
+### Build the Windows installer
+
+On Windows x64, use the same checkout and dependency setup, then run:
+
+```powershell
+pnpm desktop:exe
+```
+
+The command writes `apps/desktop/release/DeepSeek-Harness-Setup-<version>-x64.exe`. The installer contains the Windows Electron application, Node runtime, and production dependencies.
+
 ### Run from source
 
 After installing dependencies, build the repository and start the desktop application on macOS, Linux, or Windows:
@@ -43,11 +53,11 @@ The desktop application supervises the same local Harness profile, session data,
 
 This repository retains the complete DeepSeek Harness monorepo and Git history because `apps/desktop` consumes its workspace packages directly. The desktop-specific source lives under [`apps/desktop`](apps/desktop/README.md); its integration changes keep the existing CLI, Web profile, build, documentation, and runtime dependency graph aligned.
 
-DeepSeek Harness provides the agent harness, CLI, Web UI, plugin architecture, and `@deepseek-ai` packages. DSH Desktop adds cross-platform Electron process ownership and application assets, plus macOS packaging and packaged-application verification, without forking the Harness runtime or Web composition.
+DeepSeek Harness provides the agent harness, CLI, Web UI, plugin architecture, and `@deepseek-ai` packages. DSH Desktop adds cross-platform Electron process ownership, application assets, native installer assembly, and packaged-application verification without forking the Harness runtime or Web composition.
 
 ## Security and limitations
 
-The macOS image has no Developer ID certificate signature and is not notarized. Gatekeeper may require Control-clicking the installed application and choosing Open. The current application uses an operating-system-assigned loopback HTTP/WebSocket port and has no auto-update or crash-reporting service. The repository does not yet publish Intel macOS, Linux, or Windows installers. The [desktop application reference](apps/desktop/README.md) documents the renderer security settings and process lifecycle.
+The macOS image has no Developer ID certificate signature and is not notarized, so Gatekeeper may require Control-clicking the installed application and choosing Open. The Windows installer has no Authenticode signature, so Microsoft Defender SmartScreen may require an explicit override. The current application uses an operating-system-assigned loopback HTTP/WebSocket port and has no auto-update or crash-reporting service. The repository does not publish Intel macOS, Windows arm64, or Linux installers. The [desktop application reference](apps/desktop/README.md) documents the renderer security settings and process lifecycle.
 
 ## Community and support
 

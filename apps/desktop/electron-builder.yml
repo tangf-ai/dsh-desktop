@@ -28,3 +28,20 @@ mac:
     - target: dir
       arch:
         - arm64
+win:
+  icon: app/assets/icon.ico
+  target:
+    - target: dir
+      arch:
+        - x64
+    - target: nsis
+      arch:
+        - x64
+  artifactName: DeepSeek-Harness-Setup-${version}-${arch}.${ext}
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  differentialPackage: false

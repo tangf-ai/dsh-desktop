@@ -34,4 +34,4 @@ Electron Builder 只生成 `.app`，使用本地安装的 Electron 发行文件�
 
 **收益：**Apple 芯片用户无需仓库检出或下载依赖即可安装并启动预览版；打包进程使用经过校验的 Node 与自包含 CLI 依赖图；构建期与挂载镜像检查覆盖 Finder 启动的相同路径；证书身份缺失是经过断言的属性，而非假设。
 
-**代价：**镜像只支持 macOS arm64，体积较大，没有 Developer ID 签名或公证，带有隔离属性的下载可能需要明确绕过 Gatekeeper。它没有自动更新、崩溃报告流水线、Intel 构建或 Windows 安装包。未来新增签名发行渠道需要独立的发布决策，也不会改变预览版的回环 Web 载体。
+**代价：**镜像只支持 macOS arm64，体积较大，没有 Developer ID 签名或公证，带有隔离属性的下载可能需要明确绕过 Gatekeeper。它没有自动更新、崩溃报告流水线、Intel 构建或 Linux 安装包。并行的[未签名 Windows 发行版](2026-08-15-unsigned-windows-desktop-distribution.md)使用独立的原生构建与验证路径。未来新增签名发行渠道需要独立的发布决策，也不会改变预览版的回环 Web 载体。

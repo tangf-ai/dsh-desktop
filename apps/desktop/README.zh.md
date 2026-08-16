@@ -4,7 +4,7 @@
 
 面向 DeepSeek Harness 的跨平台 Electron 桌面预览应用。它持有应用窗口，并在操作系统分配的回环端口上监督现有的 `dsh web` profile，因此桌面视图与浏览器应用使用相同的 Host 组合、Client 插件、会话数据、工具和 Web UI。
 
-源码模式支持 macOS、Linux 和 Windows。当前发布的安装包是未签名的 Apple 芯片 macOS DMG；Linux 和 Windows 安装包尚未发布。
+源码模式支持 macOS、Linux 和 Windows。打包发行版包括未签名的 Apple 芯片 macOS DMG 和未签名的 Windows x64 NSIS 安装包；目前不发布 Linux 安装包。
 
 这个独立维护的社区应用不是 DeepSeek 官方发行版。它构建于 DeepSeek Harness workspace 内，因此保留上游 `@deepseek-ai` 包名；该名称表示源码兼容性，不代表本仓库通过 NPM 发布。上游归属说明见[仓库概述](../../README.md)。
 
@@ -26,6 +26,18 @@ xattr -dr com.apple.quarantine "/Applications/DeepSeek Harness.app"
 
 `pnpm desktop:smoke:dmg` 会以只读方式挂载镜像，校验内置运行时与证书身份确实缺失，启动打包后的应用，检查 Electron 实际安全参数，捕获 `.artifacts/desktop-dmg.png`，关闭应用，并确认其回环 URL 已停止响应。
 
+## 构建 Windows 安装包
+
+在 Windows x64 上，从仓库检出构建应用与未签名 NSIS 安装包：
+
+```powershell
+pnpm desktop:exe
+```
+
+该命令生成 `apps/desktop/release/DeepSeek-Harness-Setup-<version>-x64.exe`，并把用于验证的解包应用保留在 `apps/desktop/dist/win-unpacked`。安装后的应用包含生产依赖闭包和经过校验的 Windows x64 `node.exe`，因此不需要仓库检出、Node、pnpm 或下载 Electron。
+
+安装包和应用可执行文件都没有 Authenticode 签名。Microsoft Defender SmartScreen 可能把下载的安装包标记为无法识别的应用，并要求用户明确允许。`pnpm desktop:smoke:win` 会拒绝意外出现的签名，运行内置 CLI，使用隔离的 Harness home 启动解包后的已打包应用，验证其打包身份和 Electron 实际安全参数，捕获 `.artifacts/desktop-windows.png`，关闭应用，并确认其回环 URL 已停止响应。
+
 ## 从源码运行
 
 在已构建的仓库检出中运行：
@@ -40,7 +52,7 @@ pnpm desktop
 
 发布的源码包还提供 `dsh-desktop`。它的 Node 启动器运行包内 Electron 依赖，并把同一个 Node 可执行文件传给 Electron 主进程；主进程随后启动已安装的 `@deepseek-ai/dsh` CLI 依赖，不改变原生模块 ABI。
 
-源码模式会延迟解析对应平台的 Electron 可执行文件。除非该文件已进入缓存，首次从源码运行时需要网络访问；默认端点不可用时，可用 `ELECTRON_MIRROR` 选择其他下载镜像。DMG 已包含 Electron，不使用该下载路径。
+源码模式会延迟解析对应平台的 Electron 可执行文件。除非该文件已进入缓存，首次从源码运行时需要网络访问；默认端点不可用时，可用 `ELECTRON_MIRROR` 选择其他下载镜像。打包发行版已包含 Electron，不使用该下载路径。
 
 ## 安全与生命周期
 
@@ -58,8 +70,8 @@ Electron 进程只拥有一棵隔离的 Harness 进程树。它等到 Loader 停
 
 ## 已知限制与暂缓事项
 
-- **未签名的 Apple 芯片预览版**：DMG 只支持 macOS arm64，既无 Developer ID 签名也未公证；尚不包含 Intel macOS、Linux 与 Windows 安装包、自动更新和崩溃报告。源码模式仍支持 macOS、Linux 和 Windows。
+- **未签名的原生安装包**：DMG 支持 macOS arm64，既无 Developer ID 签名也未公证；NSIS 安装包支持 Windows x64，没有 Authenticode 签名。尚不包含 Intel macOS、Windows arm64、Linux 安装包、自动更新和崩溃报告。源码模式仍支持 macOS、Linux 和 Windows。
 - **回环 Web 载体**：预览版会打开本地 HTTP／WebSocket 监听，尚未实现规划中的 `file://` 加 IPC 载体。Host 信任栅栏可阻止浏览器 DNS rebinding，但不是针对本地进程的认证。
 - **不自动重启运行时**：Harness 子进程意外退出时会显示阻塞错误并关闭应用，而不会重建 Cordis 树。
-- **Windows 崩溃清理会明确失败**：普通关闭会在 CLI 根进程仍可标识其进程树时使用 `taskkill /T /F`。如果该根进程在清理前意外消失，Windows 没有进程组存活探针；未成功的 `taskkill` 会使关闭失败，而不会声称后代进程已消失。打包后的 Windows 应用可以用 Job Object 所有权替换这一限制。
+- **Windows 崩溃清理会明确失败**：普通关闭会在 CLI 根进程仍可标识其进程树时使用 `taskkill /T /F`。如果该根进程在清理前意外消失，Windows 没有进程组存活探针；未成功的 `taskkill` 会使关闭失败，而不会声称后代进程已消失。未来可由 Job Object 所有权替换这一限制。
 - **没有桌面原生能力提供方**：目录选择和路径打开仍使用 Web profile 现有的 Host 提供方，而不是 Electron dialog API。

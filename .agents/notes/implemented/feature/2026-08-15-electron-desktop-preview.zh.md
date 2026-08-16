@@ -14,7 +14,7 @@ GUI 协议架构为 Electron client 预留了位置，但用户只能体验浏�
 
 Electron 主进程拥有一棵隔离的 Harness 进程树和一个应用窗口的生命周期。Host 启动期间显示品牌加载页；顶层导航不得离开分配到的回环 origin；普通外部链接在系统浏览器中打开；启动与意外退出诊断会明确呈现。POSIX 关闭流程对整个进程组执行有界的 SIGTERM 至 SIGKILL 阶梯并等待进程组退出；Windows 使用 `taskkill /T /F`。源码模式的 Node 启动器还拥有独立且有界的 Electron 信号阶梯。源码模式默认以调用目录作为 Harness 工作目录，从 Finder 启动的打包应用默认使用用户 home，`DSH_DESKTOP_CWD` 与 `DSH_DESKTOP_STARTUP_TIMEOUT_MS` 则暴露两项随部署变化的启动值。
 
-专用 IPC 载体仍未实现。预览版使用本地 socket 是明确的交付取舍，而不是第二套桌面协议：当 renderer connection provider 与 client module 清单具备独立于传输的 provider 后，未来的无端口发行版可以替换这一应用自有载体。在真实需求出现前，Web 仍是唯一组装后的 GUI 行为。[未签名 macOS 发行版](2026-08-15-unsigned-macos-desktop-distribution.md)会打包该应用及其现有 CLI sidecar，而不改变载体决策。
+专用 IPC 载体仍未实现。预览版使用本地 socket 是明确的交付取舍，而不是第二套桌面协议：当 renderer connection provider 与 client module 清单具备独立于传输的 provider 后，未来的无端口发行版可以替换这一应用自有载体。在真实需求出现前，Web 仍是唯一组装后的 GUI 行为。[未签名 macOS 发行版](2026-08-15-unsigned-macos-desktop-distribution.md)和[未签名 Windows 发行版](2026-08-15-unsigned-windows-desktop-distribution.md)会打包该应用及其现有 CLI sidecar，而不改变载体决策。
 
 ## Testing
 
@@ -34,4 +34,4 @@ Electron 主进程拥有一棵隔离的 Harness 进程树和一个应用窗口�
 
 **收益：**用户可以在桌面窗口中运行完整 Harness GUI，不复制核心或 UI 代码；应用通过消费普通 CLI 与 Web profile 跟随 `master`；启动、崩溃、导航、单实例与关闭所有权明确；操作系统分配端口可避免冲突。
 
-**代价：**预览版仍打开回环 HTTP／WebSocket 监听，并继承 Web 载体缺少本地进程认证的限制。源码模式首次启动时需要下载 Electron；macOS DMG 未签名且未公证。两种形式都没有自动更新、Electron 原生 provider 或运行时重启。Windows 进程树清理依赖 CLI 根进程仍存在时成功执行 `taskkill`；预览版没有可在根进程突然退出后证明清理完成的 Job Object，因此失败会明确报出。这些限制保留在应用 README 中。
+**代价：**预览版仍打开回环 HTTP／WebSocket 监听，并继承 Web 载体缺少本地进程认证的限制。源码模式首次启动时需要下载 Electron；macOS DMG 未签名且未公证，Windows 安装包没有 Authenticode 签名。所有形式都没有自动更新、Electron 原生 provider 或运行时重启。Windows 进程树清理依赖 CLI 根进程仍存在时成功执行 `taskkill`；预览版没有可在根进程突然退出后证明清理完成的 Job Object，因此失败会明确报出。这些限制保留在应用 README 中。

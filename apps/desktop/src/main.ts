@@ -187,7 +187,9 @@ function resolveHarnessCli(): string {
 }
 
 function resolveNodeExecutable(): string {
-  if (app.isPackaged) return join(process.resourcesPath, 'runtime', 'bin', 'node')
+  if (app.isPackaged) {
+    return join(process.resourcesPath, 'runtime', 'bin', process.platform === 'win32' ? 'node.exe' : 'node')
+  }
   const executable = process.env.DSH_DESKTOP_NODE_EXEC_PATH?.trim()
   if (executable === undefined || executable === '') {
     throw new Error('desktop preview must be started through `pnpm desktop` or the `dsh-desktop` launcher')
