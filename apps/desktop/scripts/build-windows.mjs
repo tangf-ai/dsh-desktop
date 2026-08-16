@@ -2,6 +2,7 @@ import { access, cp, mkdir, readdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import {
   desktopRoot,
+  electronBuilderCli,
   manifest,
   releaseRoot,
   repositoryRoot,
@@ -26,7 +27,8 @@ try {
   for (const name of await readdir(releaseRoot)) {
     if (/^DeepSeek-Harness-Setup-.+-x64\.exe$/.test(name)) await rm(join(releaseRoot, name), { force: true })
   }
-  await run(join(desktopRoot, 'node_modules', '.bin', 'electron-builder.cmd'), [
+  await run(process.execPath, [
+    electronBuilderCli,
     '--projectDir',
     staged.stagingRoot,
     '--config',

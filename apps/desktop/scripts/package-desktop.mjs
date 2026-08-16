@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 export const desktopRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
 export const repositoryRoot = resolve(desktopRoot, '../..')
 export const releaseRoot = join(desktopRoot, 'release')
+export const electronBuilderCli = join(desktopRoot, 'node_modules', 'electron-builder', 'out', 'cli', 'cli.js')
 export const manifest = JSON.parse(await readFile(join(desktopRoot, 'package.json'), 'utf8'))
 
 /**
@@ -69,14 +70,14 @@ export async function stageDesktopApplication(target) {
 
     const pnpmWorkspaceState = await readFile(pnpmWorkspaceStatePath)
     try {
-      await run(process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm', [
+      await run('pnpm', [
         '--filter',
         '@deepseek-ai/dsh-desktop',
         'deploy',
         '--prod',
         '--legacy',
         runtimeRoot,
-      ], repositoryRoot, { ...process.env, pnpm_config_verify_deps_before_run: 'false' })
+      ], repositoryRoot, { ...process.env, pnpm_config_verify_deps_before_run: 'false' }, process.platform === 'win32')
     } finally {
       await writeFile(pnpmWorkspaceStatePath, pnpmWorkspaceState)
     }
@@ -113,11 +114,12 @@ export async function stageDesktopApplication(target) {
  * @param {string[]} args - Command arguments.
  * @param {string} cwd - Working directory.
  * @param {NodeJS.ProcessEnv} [env] - Child environment.
+ * @param {boolean} [shell] - Whether the platform shell resolves the command.
  * @returns {Promise<void>} When the subprocess exits successfully.
  */
-export async function run(command, args, cwd, env = process.env) {
+export async function run(command, args, cwd, env = process.env, shell = false) {
   await new Promise((resolveRun, rejectRun) => {
-    const child = spawn(command, args, { cwd, env, stdio: 'inherit' })
+    const child = spawn(command, args, { cwd, env, shell, stdio: 'inherit' })
     child.once('error', rejectRun)
     child.once('close', (code, signal) => {
       if (code === 0) resolveRun()
