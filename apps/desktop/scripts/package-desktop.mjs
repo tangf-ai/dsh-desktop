@@ -1,5 +1,5 @@
 import { execFileSync, spawn } from 'node:child_process'
-import { access, chmod, cp, lstat, mkdir, mkdtemp, readFile, readdir, readlink, rm, symlink, unlink, writeFile } from 'node:fs/promises'
+import { access, chmod, cp, lstat, mkdir, mkdtemp, readFile, readdir, readlink, realpath, rm, symlink, unlink, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
@@ -215,13 +215,13 @@ async function makeRuntimePortable(root) {
     const directory = pending.pop()
     for (const entry of await readdir(directory, { withFileTypes: true })) {
       const path = join(directory, entry.name)
-      if (entry.isDirectory()) {
-        pending.push(path)
+      const linkTarget = await resolveRuntimeLink(path, entry)
+      if (linkTarget === undefined) {
+        if (entry.isDirectory()) pending.push(path)
         continue
       }
-      if (!entry.isSymbolicLink()) continue
 
-      const originalTarget = resolve(dirname(path), await readlink(path))
+      const originalTarget = linkTarget
       if (omittedTargets.has(pathKey(originalTarget))) {
         await unlink(path)
         continue
@@ -248,8 +248,9 @@ async function makeRuntimePortable(root) {
 
 async function materializeRuntimeEntry(source, destination, root, replacementsBySource, omittedTargets, activeSources = new Set()) {
   const sourceStats = await lstat(source)
-  if (sourceStats.isSymbolicLink()) {
-    const originalTarget = resolve(dirname(source), await readlink(source))
+  const linkTarget = await resolveRuntimeLink(source)
+  if (linkTarget !== undefined) {
+    const originalTarget = linkTarget
     if (omittedTargets.has(pathKey(originalTarget))) return
     const replacement = replacementsBySource.get(pathKey(originalTarget))
     const target = replacement?.target ?? originalTarget
@@ -279,6 +280,16 @@ async function materializeRuntimeEntry(source, destination, root, replacementsBy
     return
   }
   await cp(source, destination)
+}
+
+async function resolveRuntimeLink(path, entry) {
+  const stats = entry === undefined ? await lstat(path) : undefined
+  if ((entry?.isSymbolicLink() ?? stats?.isSymbolicLink()) === true) {
+    return resolve(dirname(path), await readlink(path))
+  }
+  if ((entry?.isDirectory() ?? stats?.isDirectory()) !== true) return undefined
+  const resolved = await realpath(path)
+  return pathKey(resolved) === pathKey(path) ? undefined : resolved
 }
 
 function pathKey(path) {
