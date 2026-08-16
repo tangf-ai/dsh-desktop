@@ -2,7 +2,7 @@ import { execFileSync, spawn } from 'node:child_process'
 import { access, chmod, cp, lstat, mkdir, mkdtemp, readFile, readdir, readlink, realpath, rm, symlink, unlink, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
-import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 export const desktopRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
@@ -212,12 +212,13 @@ async function makeRuntimePortable(root) {
 
   const pending = [root]
   const canonicalRoot = await realpath(root)
+  const canonicalParents = new Map()
   while (pending.length > 0) {
     const directory = pending.pop()
     for (const entry of await readdir(directory, { withFileTypes: true })) {
       const path = join(directory, entry.name)
       const stats = await lstat(path)
-      const linkTarget = await resolveRuntimeLink(path, stats)
+      const linkTarget = await resolveRuntimeLink(path, stats, canonicalParents)
       if (linkTarget === undefined) {
         if (stats.isDirectory()) pending.push(path)
         continue
@@ -237,7 +238,7 @@ async function makeRuntimePortable(root) {
       await access(target)
       if (process.platform === 'win32') {
         await unlink(path)
-        await materializeRuntimeEntry(target, path, canonicalRoot, replacementsBySource, omittedTargets)
+        await materializeRuntimeEntry(target, path, canonicalRoot, replacementsBySource, omittedTargets, canonicalParents)
         continue
       }
       if (replacement !== undefined) {
@@ -248,9 +249,9 @@ async function makeRuntimePortable(root) {
   }
 }
 
-async function materializeRuntimeEntry(source, destination, root, replacementsBySource, omittedTargets, activeSources = new Set()) {
+async function materializeRuntimeEntry(source, destination, root, replacementsBySource, omittedTargets, canonicalParents, activeSources = new Set()) {
   const sourceStats = await lstat(source)
-  const linkTarget = await resolveRuntimeLink(source, sourceStats)
+  const linkTarget = await resolveRuntimeLink(source, sourceStats, canonicalParents)
   if (linkTarget !== undefined) {
     const originalTarget = linkTarget
     if (omittedTargets.has(pathKey(originalTarget))) return
@@ -261,7 +262,7 @@ async function materializeRuntimeEntry(source, destination, root, replacementsBy
       throw new Error(`desktop runtime symlink escapes its bundle: ${source} -> ${target}`)
     }
     await access(target)
-    await materializeRuntimeEntry(target, destination, root, replacementsBySource, omittedTargets, activeSources)
+    await materializeRuntimeEntry(target, destination, root, replacementsBySource, omittedTargets, canonicalParents, activeSources)
     return
   }
   if (sourceStats.isDirectory()) {
@@ -276,6 +277,7 @@ async function materializeRuntimeEntry(source, destination, root, replacementsBy
         root,
         replacementsBySource,
         omittedTargets,
+        canonicalParents,
         nextActiveSources,
       )
     }
@@ -284,10 +286,31 @@ async function materializeRuntimeEntry(source, destination, root, replacementsBy
   await cp(source, destination)
 }
 
-async function resolveRuntimeLink(path, stats) {
+async function resolveRuntimeLink(path, stats, canonicalParents) {
   const linkStats = stats ?? await lstat(path)
-  if (!linkStats.isSymbolicLink()) return undefined
-  return resolve(dirname(path), await readlink(path))
+  if (linkStats.isSymbolicLink()) return resolve(dirname(path), await readlink(path))
+  if (process.platform !== 'win32' || !linkStats.isDirectory() || !isNodeModulesPackagePath(path)) return undefined
+
+  // pnpm deploy uses Windows junctions for package links, but lstat does not
+  // expose every junction as a symbolic link. Probe package-level entries only;
+  // realpath on every ordinary runtime directory makes large builds time out.
+  const resolved = await realpath(path)
+  const parent = dirname(path)
+  let canonicalParent = canonicalParents.get(pathKey(parent))
+  if (canonicalParent === undefined) {
+    canonicalParent = await realpath(parent)
+    canonicalParents.set(pathKey(parent), canonicalParent)
+  }
+  const canonicalPath = join(canonicalParent, basename(path))
+  return pathKey(resolved) === pathKey(canonicalPath) ? undefined : resolved
+}
+
+function isNodeModulesPackagePath(path) {
+  const segments = path.split(sep)
+  const nodeModulesIndex = segments.lastIndexOf('node_modules')
+  if (nodeModulesIndex < 0) return false
+  const packageDepth = segments.length - nodeModulesIndex - 1
+  return packageDepth === 1 || (packageDepth === 2 && segments[nodeModulesIndex + 1]?.startsWith('@'))
 }
 
 function pathKey(path) {
