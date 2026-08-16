@@ -45,11 +45,14 @@ export async function stageDesktopApplication(target) {
     await cp(join(desktopRoot, 'lib', 'types'), join(appRoot, 'lib', 'types'), { recursive: true })
     await cp(join(desktopRoot, 'assets'), join(appRoot, 'assets'), { recursive: true })
     await cp(join(desktopRoot, 'electron-builder.yml'), join(stagingRoot, 'electron-builder.yml'))
-    await symlink(
-      join(desktopRoot, 'node_modules', 'electron', 'dist'),
-      join(stagingRoot, 'electron-dist'),
-      process.platform === 'win32' ? 'junction' : 'dir',
-    )
+    const sourceElectronDist = join(desktopRoot, 'node_modules', 'electron', 'dist')
+    const stagedElectronDist = join(stagingRoot, 'electron-dist')
+    if (process.platform === 'win32') {
+      await cp(sourceElectronDist, stagedElectronDist, { recursive: true })
+    } else {
+      await symlink(sourceElectronDist, stagedElectronDist, 'dir')
+    }
+    await access(stagedElectronDist)
     await writeFile(join(stagingRoot, 'package.json'), `${JSON.stringify({
       name: '@deepseek-ai/dsh-desktop-builder',
       version: manifest.version,
