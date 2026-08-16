@@ -2,7 +2,7 @@ import { execFileSync, spawn } from 'node:child_process'
 import { access, chmod, cp, lstat, mkdir, mkdtemp, readFile, readdir, readlink, realpath, rm, symlink, unlink, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
-import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 export const desktopRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
@@ -289,7 +289,8 @@ async function resolveRuntimeLink(path, entry) {
   }
   if ((entry?.isDirectory() ?? stats?.isDirectory()) !== true) return undefined
   const resolved = await realpath(path)
-  return pathKey(resolved) === pathKey(path) ? undefined : resolved
+  const canonicalPath = join(await realpath(dirname(path)), basename(path))
+  return pathKey(resolved) === pathKey(canonicalPath) ? undefined : resolved
 }
 
 function pathKey(path) {
