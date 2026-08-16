@@ -108,7 +108,7 @@ async function resolveInstaller(argument) {
 }
 
 function authenticodeStatus(path) {
-  return execFileSync('powershell.exe', [
+  return execFileSync('pwsh.exe', [
     '-NoProfile',
     '-NonInteractive',
     '-Command',
