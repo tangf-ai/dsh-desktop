@@ -77,6 +77,7 @@ export async function stageDesktopApplication(target) {
     const pnpmWorkspaceState = await readFile(pnpmWorkspaceStatePath)
     try {
       await run('pnpm', [
+        '--config.node-linker=hoisted',
         '--filter',
         '@deepseek-ai/dsh-desktop',
         'deploy',
