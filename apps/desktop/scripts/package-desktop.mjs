@@ -1,5 +1,5 @@
 import { execFileSync, spawn } from 'node:child_process'
-import { access, chmod, cp, mkdir, mkdtemp, readFile, readdir, readlink, rm, stat, symlink, unlink, writeFile } from 'node:fs/promises'
+import { access, chmod, cp, lstat, mkdir, mkdtemp, readFile, readdir, readlink, rm, symlink, unlink, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
@@ -234,10 +234,8 @@ async function makeRuntimePortable(root) {
       }
       await access(target)
       if (process.platform === 'win32') {
-        const targetStats = await stat(target)
         await unlink(path)
-        await cp(target, path, { recursive: true })
-        if (targetStats.isDirectory()) pending.push(path)
+        await materializeRuntimeEntry(target, path, root, replacementsBySource, omittedTargets)
         continue
       }
       if (replacement !== undefined) {
@@ -246,6 +244,41 @@ async function makeRuntimePortable(root) {
       }
     }
   }
+}
+
+async function materializeRuntimeEntry(source, destination, root, replacementsBySource, omittedTargets, activeSources = new Set()) {
+  const sourceStats = await lstat(source)
+  if (sourceStats.isSymbolicLink()) {
+    const originalTarget = resolve(dirname(source), await readlink(source))
+    if (omittedTargets.has(pathKey(originalTarget))) return
+    const replacement = replacementsBySource.get(pathKey(originalTarget))
+    const target = replacement?.target ?? originalTarget
+    const targetFromRoot = relative(root, target)
+    if (targetFromRoot === '..' || targetFromRoot.startsWith(`..${sep}`) || isAbsolute(targetFromRoot)) {
+      throw new Error(`desktop runtime symlink escapes its bundle: ${source} -> ${target}`)
+    }
+    await access(target)
+    await materializeRuntimeEntry(target, destination, root, replacementsBySource, omittedTargets, activeSources)
+    return
+  }
+  if (sourceStats.isDirectory()) {
+    const sourceKey = pathKey(source)
+    if (activeSources.has(sourceKey)) return
+    const nextActiveSources = new Set(activeSources).add(sourceKey)
+    await mkdir(destination, { recursive: true })
+    for (const entry of await readdir(source, { withFileTypes: true })) {
+      await materializeRuntimeEntry(
+        join(source, entry.name),
+        join(destination, entry.name),
+        root,
+        replacementsBySource,
+        omittedTargets,
+        nextActiveSources,
+      )
+    }
+    return
+  }
+  await cp(source, destination)
 }
 
 function pathKey(path) {
