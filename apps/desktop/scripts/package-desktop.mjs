@@ -48,6 +48,7 @@ export async function stageDesktopApplication(target) {
     await cp(join(desktopRoot, 'assets'), join(appRoot, 'assets'), { recursive: true })
     await cp(join(desktopRoot, 'electron-builder.yml'), join(stagingRoot, 'electron-builder.yml'))
     const sourceElectronDist = join(electronPackageRoot, 'dist')
+    await ensureElectronRuntime(sourceElectronDist, target.platform)
     const stagedElectronDist = join(stagingRoot, 'electron-dist')
     if (process.platform === 'win32') {
       await cp(sourceElectronDist, stagedElectronDist, { recursive: true })
@@ -110,6 +111,19 @@ export async function stageDesktopApplication(target) {
   } catch (error) {
     await rm(stagingRoot, { recursive: true, force: true })
     throw error
+  }
+}
+
+async function ensureElectronRuntime(distRoot, platform) {
+  const executable = platform === 'win32'
+    ? join(distRoot, 'electron.exe')
+    : join(distRoot, 'Electron.app', 'Contents', 'MacOS', 'Electron')
+  try {
+    await access(executable)
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error
+    await run(process.execPath, [join(electronPackageRoot, 'install.js')], repositoryRoot)
+    await access(executable)
   }
 }
 
