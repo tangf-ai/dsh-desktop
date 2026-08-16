@@ -2,7 +2,7 @@ import { execFileSync, spawn } from 'node:child_process'
 import { access, chmod, cp, lstat, mkdir, mkdtemp, readFile, readdir, readlink, realpath, rm, symlink, unlink, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
-import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 export const desktopRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
@@ -211,13 +211,15 @@ async function makeRuntimePortable(root) {
   }
 
   const pending = [root]
+  const canonicalRoot = await realpath(root)
   while (pending.length > 0) {
     const directory = pending.pop()
     for (const entry of await readdir(directory, { withFileTypes: true })) {
       const path = join(directory, entry.name)
-      const linkTarget = await resolveRuntimeLink(path, entry)
+      const stats = await lstat(path)
+      const linkTarget = await resolveRuntimeLink(path, stats)
       if (linkTarget === undefined) {
-        if (entry.isDirectory()) pending.push(path)
+        if (stats.isDirectory()) pending.push(path)
         continue
       }
 
@@ -228,14 +230,14 @@ async function makeRuntimePortable(root) {
       }
       const replacement = replacementsBySource.get(pathKey(originalTarget))
       const target = replacement?.target ?? originalTarget
-      const targetFromRoot = relative(root, target)
+      const targetFromRoot = relative(canonicalRoot, await realpath(target))
       if (targetFromRoot === '..' || targetFromRoot.startsWith(`..${sep}`) || isAbsolute(targetFromRoot)) {
         throw new Error(`desktop runtime symlink escapes its bundle: ${path} -> ${target}`)
       }
       await access(target)
       if (process.platform === 'win32') {
         await unlink(path)
-        await materializeRuntimeEntry(target, path, root, replacementsBySource, omittedTargets)
+        await materializeRuntimeEntry(target, path, canonicalRoot, replacementsBySource, omittedTargets)
         continue
       }
       if (replacement !== undefined) {
@@ -248,13 +250,13 @@ async function makeRuntimePortable(root) {
 
 async function materializeRuntimeEntry(source, destination, root, replacementsBySource, omittedTargets, activeSources = new Set()) {
   const sourceStats = await lstat(source)
-  const linkTarget = await resolveRuntimeLink(source)
+  const linkTarget = await resolveRuntimeLink(source, sourceStats)
   if (linkTarget !== undefined) {
     const originalTarget = linkTarget
     if (omittedTargets.has(pathKey(originalTarget))) return
     const replacement = replacementsBySource.get(pathKey(originalTarget))
     const target = replacement?.target ?? originalTarget
-    const targetFromRoot = relative(root, target)
+    const targetFromRoot = relative(root, await realpath(target))
     if (targetFromRoot === '..' || targetFromRoot.startsWith(`..${sep}`) || isAbsolute(targetFromRoot)) {
       throw new Error(`desktop runtime symlink escapes its bundle: ${source} -> ${target}`)
     }
@@ -282,15 +284,10 @@ async function materializeRuntimeEntry(source, destination, root, replacementsBy
   await cp(source, destination)
 }
 
-async function resolveRuntimeLink(path, entry) {
-  const stats = entry === undefined ? await lstat(path) : undefined
-  if ((entry?.isSymbolicLink() ?? stats?.isSymbolicLink()) === true) {
-    return resolve(dirname(path), await readlink(path))
-  }
-  if ((entry?.isDirectory() ?? stats?.isDirectory()) !== true) return undefined
-  const resolved = await realpath(path)
-  const canonicalPath = join(await realpath(dirname(path)), basename(path))
-  return pathKey(resolved) === pathKey(canonicalPath) ? undefined : resolved
+async function resolveRuntimeLink(path, stats) {
+  const linkStats = stats ?? await lstat(path)
+  if (!linkStats.isSymbolicLink()) return undefined
+  return resolve(dirname(path), await readlink(path))
 }
 
 function pathKey(path) {
