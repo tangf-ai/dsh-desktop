@@ -12,7 +12,7 @@ Status: implemented
 
 `pnpm desktop:exe` 在 Windows x64 上构建仓库，并生成 `apps/desktop/release/DeepSeek-Harness-Setup-<version>-x64.exe`。引导式用户级 NSIS 安装包会创建开始菜单和桌面快捷方式，并允许自定义安装目录。它包含 Windows Electron 应用、Windows x64 `node.exe`，以及与并行的[未签名 macOS 发行版](2026-08-15-unsigned-macos-desktop-distribution.md)相同的纯生产 `@deepseek-ai/dsh` 依赖闭包。打包后的主进程在 Windows 上选择 `runtime/bin/node.exe`。
 
-共享打包模块会校验原生 Node 版本、运行已部署 CLI、在 bundle 内部实体化两个 workspace override 包，仅对 `node_modules` 下的包级条目探测 Windows junction 目标并复制其内容、移除不支持的 Landlock 链接，并拒绝所有仍然逃出运行时的依赖链接。Electron Builder 同时创建用于验证的解包应用和 NSIS 安装包。应用可执行文件和安装包都不包含 Authenticode 签名。
+共享打包模块会校验原生 Node 版本、运行已部署 CLI、在 bundle 内部实体化两个 workspace override 包，仅对 `node_modules` 下的包级条目探测 Windows junction 目标并复制其内容（包括被 `lstat` 识别为非目录的 junction）、移除不支持的 Landlock 链接，并拒绝所有仍然逃出运行时的依赖链接。Electron Builder 同时创建用于验证的解包应用和 NSIS 安装包。应用可执行文件和安装包都不包含 Authenticode 签名。
 
 `Desktop Windows distribution` 工作流会针对 `main`、相关 PR、手动运行和发布标签，在原生 `windows-2025` runner 上构建。发布标签必须等于 `v` 加桌面包版本。单元测试、原生打包和 packaged smoke 全部通过后，标签运行会创建包含 Windows 安装包的 GitHub Release 草稿。公开发布是独立的评审操作，需要先提供 macOS 产物和发布说明。
 

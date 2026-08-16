@@ -289,11 +289,11 @@ async function materializeRuntimeEntry(source, destination, root, replacementsBy
 async function resolveRuntimeLink(path, stats, canonicalParents) {
   const linkStats = stats ?? await lstat(path)
   if (linkStats.isSymbolicLink()) return resolve(dirname(path), await readlink(path))
-  if (process.platform !== 'win32' || !linkStats.isDirectory() || !isNodeModulesPackagePath(path)) return undefined
+  if (process.platform !== 'win32' || !isNodeModulesPackagePath(path)) return undefined
 
   // pnpm deploy uses Windows junctions for package links, but lstat does not
   // expose every junction as a symbolic link. Probe package-level entries only;
-  // realpath on every ordinary runtime directory makes large builds time out.
+  // realpath on every ordinary runtime path makes large builds time out.
   const resolved = await realpath(path)
   const parent = dirname(path)
   let canonicalParent = canonicalParents.get(pathKey(parent))
