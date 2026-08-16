@@ -55,14 +55,18 @@ describe('desktop Harness process', () => {
 
   it('reports a ready child that exits unexpectedly', async () => {
     const exited = vi.fn()
-    const process = makeProcess({
+    const harness = makeProcess({
       env: { ...processEnv(), FAKE_EXIT_AFTER_READY: '1' },
       onUnexpectedExit: exited,
     })
-    running.push(process)
 
-    await process.start()
+    await harness.start()
     await vi.waitFor(() => { expect(exited).toHaveBeenCalledWith({ code: 7, signal: null }) })
+    if (process.platform === 'win32') {
+      await expect(harness.stop()).rejects.toThrow(/taskkill failed/)
+    } else {
+      await harness.stop()
+    }
   })
 
   it('stops descendants that outlive the direct CLI process', async () => {
