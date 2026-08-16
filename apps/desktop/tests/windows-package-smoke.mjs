@@ -112,7 +112,9 @@ function authenticodeStatus(path) {
     '-NoProfile',
     '-NonInteractive',
     '-Command',
-    '[Console]::Out.Write((Get-AuthenticodeSignature -LiteralPath $args[0]).Status)',
-    path,
-  ], { encoding: 'utf8' }).trim()
+    '[Console]::Out.Write((Get-AuthenticodeSignature -LiteralPath $env:DSH_DESKTOP_AUTHENTICODE_PATH).Status)',
+  ], {
+    encoding: 'utf8',
+    env: { ...process.env, DSH_DESKTOP_AUTHENTICODE_PATH: path },
+  }).trim()
 }
