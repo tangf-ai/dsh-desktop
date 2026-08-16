@@ -1,5 +1,5 @@
 import { execFileSync, spawn } from 'node:child_process'
-import { access, chmod, cp, mkdir, mkdtemp, readFile, readdir, readlink, rm, symlink, unlink, writeFile } from 'node:fs/promises'
+import { access, chmod, cp, mkdir, mkdtemp, readFile, readdir, readlink, rm, stat, symlink, unlink, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
@@ -228,15 +228,22 @@ async function makeRuntimePortable(root) {
       }
       const replacement = replacementsBySource.get(pathKey(originalTarget))
       const target = replacement?.target ?? originalTarget
-      if (replacement !== undefined) {
-        await unlink(path)
-        await symlink(relative(dirname(path), target), path, process.platform === 'win32' ? 'junction' : 'dir')
-      }
       const targetFromRoot = relative(root, target)
       if (targetFromRoot === '..' || targetFromRoot.startsWith(`..${sep}`) || isAbsolute(targetFromRoot)) {
         throw new Error(`desktop runtime symlink escapes its bundle: ${path} -> ${target}`)
       }
       await access(target)
+      if (process.platform === 'win32') {
+        const targetStats = await stat(target)
+        await unlink(path)
+        await cp(target, path, { recursive: true })
+        if (targetStats.isDirectory()) pending.push(path)
+        continue
+      }
+      if (replacement !== undefined) {
+        await unlink(path)
+        await symlink(relative(dirname(path), target), path, 'dir')
+      }
     }
   }
 }
