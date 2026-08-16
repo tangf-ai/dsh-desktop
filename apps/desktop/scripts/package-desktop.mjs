@@ -69,7 +69,7 @@ export async function stageDesktopApplication(target) {
 
     const pnpmWorkspaceState = await readFile(pnpmWorkspaceStatePath)
     try {
-      await run('pnpm', [
+      await run(process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm', [
         '--filter',
         '@deepseek-ai/dsh-desktop',
         'deploy',
