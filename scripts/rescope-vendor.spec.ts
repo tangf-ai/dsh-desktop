@@ -5,7 +5,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { exactEditState } from './rescope-vendor.ts'
+import { exactEditState, rewriteRescopeLine } from './rescope-vendor.ts'
 
 const ANCHOR = '\n## Sync procedure'
 const INSERTED = `\n15. **rescope**: one log entry.\n${ANCHOR}`
@@ -37,5 +37,39 @@ describe('exactEditState', () => {
     // A moved or partially applied site: neither state is complete.
     expect(exactEditState('a = 1\nb = 2\n', 'a = 1', 'b = 2', 1)).toBe('invalid')
     expect(exactEditState('x\n', 'a = 1', 'b = 2', 1)).toBe('invalid')
+  })
+})
+
+describe('rewriteRescopeLine', () => {
+  it('rescopes package specifiers but preserves Cordis runtime protocol ids', () => {
+    expect(rewriteRescopeLine("import { Context } from 'cordis'", 'packages/example/src/index.ts'))
+      .toBe("import { Context } from '@deepseek-ai/cordis'")
+    expect(rewriteRescopeLine("ctx.emit('cordis/request-run', request)", 'packages/example/src/index.ts'))
+      .toBe("ctx.emit('cordis/request-run', request)")
+    expect(rewriteRescopeLine("event.name.startsWith('cordis/')", 'packages/example/src/index.ts'))
+      .toBe("event.name.startsWith('cordis/')")
+    expect(rewriteRescopeLine(
+      "signature: '\\'cordis/request-run\\'(request: Request): void'",
+      'packages/example/src/api-catalog.ts',
+    )).toBe("signature: '\\'cordis/request-run\\'(request: Request): void'")
+  })
+
+  it('preserves per-file locale and vendor directory ids', () => {
+    expect(rewriteRescopeLine(
+      "export const NS = 'cordis'",
+      'packages/extensions/ui-cordis/src/client/locales.ts',
+    )).toBe("export const NS = 'cordis'")
+    expect(rewriteRescopeLine(
+      "join(repositoryRoot, 'vendor', 'cosmokit')",
+      'apps/desktop/scripts/package-desktop.mjs',
+    )).toBe("join(repositoryRoot, 'vendor', 'cosmokit')")
+  })
+
+  it('reverses scoped package references even in a forward-excluded file', () => {
+    expect(rewriteRescopeLine(
+      "`declare module '@deepseek-ai/cordis'`",
+      'scripts/gen-cordis-catalog.ts',
+      true,
+    )).toBe("`declare module 'cordis'`")
   })
 })

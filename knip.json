@@ -10,7 +10,7 @@
     "icacls",
     "musl-gcc",
     "otool",
-    "powershell.exe",
+    "pwsh.exe",
     "python3",
     "sandbox-exec",
     "tar",
