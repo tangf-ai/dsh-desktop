@@ -10,11 +10,11 @@ GUI 协议架构为 Electron client 预留了位置，但用户只能体验浏�
 
 ## Decision
 
-`apps/desktop` 下的 `@deepseek-ai/dsh-desktop` 是桌面预览应用，不是新的能力包。源码模式下，Node 启动器运行 Electron，并把同一个 Node 可执行文件传入主进程；打包模式下，主进程使用应用资源目录内的 Node 运行时与 `@deepseek-ai/dsh` CLI。两种形式都会将该 CLI 作为子进程监督，以 `--host 127.0.0.1 --port 0` 启动完整 Web profile，等待 Loader 停稳后的 URL 行，再用加固的 `BrowserWindow` 加载该 origin。每棵 Harness 进程树使用同一个 Node 可执行文件，可保持原生模块 ABI。该设计也保留 [GUI 分层与 RPC 协议](../architecture/2026-07-19-gui-layering-and-rpc-protocol.md)：预览版不分叉 Agent、Session、API、Client 插件或 Web 组合。
+`apps/desktop` 下的 `@deepseek-ai/dsh-desktop` 是桌面预览应用，不是新的能力包。源码模式下，Node 启动器运行 Electron，并把同一个 Node 可执行文件传入主进程；打包模式下，主进程使用应用资源目录内的 Node 运行时与 `@deepseek-ai/dsh` CLI。两种形式都会将该 CLI 作为子进程监督，以 `--host 127.0.0.1 --port 0` 启动完整 Web profile，等待 Loader 停稳后的 URL 行，再用加固的 `BrowserWindow` 加载该 origin。每棵 Harness 进程树使用同一个 Node 可执行文件，可保持原生模块 ABI。该设计也保留 [GUI 分层与 RPC 协议](../architecture/2026-07-19-gui-layering-and-rpc-protocol.zh.md)：预览版不分叉 Agent、Session、API、Client 插件或 Web 组合。
 
 Electron 主进程拥有一棵隔离的 Harness 进程树和一个应用窗口的生命周期。Host 启动期间显示品牌加载页；顶层导航不得离开分配到的回环 origin；普通外部链接在系统浏览器中打开；启动与意外退出诊断会明确呈现。POSIX 关闭流程对整个进程组执行有界的 SIGTERM 至 SIGKILL 阶梯并等待进程组退出；Windows 使用 `taskkill /T /F`。源码模式的 Node 启动器还拥有独立且有界的 Electron 信号阶梯。源码模式默认以调用目录作为 Harness 工作目录，从 Finder 启动的打包应用默认使用用户 home，`DSH_DESKTOP_CWD` 与 `DSH_DESKTOP_STARTUP_TIMEOUT_MS` 则暴露两项随部署变化的启动值。
 
-专用 IPC 载体仍未实现。预览版使用本地 socket 是明确的交付取舍，而不是第二套桌面协议：当 renderer connection provider 与 client module 清单具备独立于传输的 provider 后，未来的无端口发行版可以替换这一应用自有载体。在真实需求出现前，Web 仍是唯一组装后的 GUI 行为。[未签名 macOS 发行版](2026-08-15-unsigned-macos-desktop-distribution.md)和[未签名 Windows 发行版](2026-08-15-unsigned-windows-desktop-distribution.md)会打包该应用及其现有 CLI sidecar，而不改变载体决策。
+专用 IPC 载体仍未实现。预览版使用本地 socket 是明确的交付取舍，而不是第二套桌面协议：当 renderer connection provider 与 client module 清单具备独立于传输的 provider 后，未来的无端口发行版可以替换这一应用自有载体。在真实需求出现前，Web 仍是唯一组装后的 GUI 行为。[未签名 macOS 发行版](2026-08-15-unsigned-macos-desktop-distribution.zh.md)和[未签名 Windows 发行版](2026-08-15-unsigned-windows-desktop-distribution.zh.md)会打包该应用及其现有 CLI sidecar，而不改变载体决策。
 
 ## Testing
 

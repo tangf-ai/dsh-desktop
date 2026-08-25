@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-15-unsigned-windows-desktop-distribution.md
 2026-08-15-unsigned-windows-desktop-distribution.md: a0037e075ae8fb62fee5e1e2eb61b5851d31e7a3
-2026-08-15-unsigned-windows-desktop-distribution.zh.md: 683979733b8b663c4d7c55f4b64049dad63e434c
+2026-08-15-unsigned-windows-desktop-distribution.zh.md: 3b3e97acd2ff954e89ef578e27d0f632a724c405

@@ -6,11 +6,11 @@ Status: implemented
 
 ## Problem
 
-[Electron 桌面预览版](2026-08-15-electron-desktop-preview.md)可以在 Windows 上从源码运行，但可分发应用不能依赖仓库检出、用户安装的 Node 或 workspace 链接。Windows 还需要使用 Windows Electron 文件和原生依赖构建安装包，并在相同操作系统上验证可执行文件。交叉编译产物无法证明内置 CLI 可以启动、renderer 可以加载或 `taskkill` 可以关闭已打包的进程树。
+[Electron 桌面预览版](2026-08-15-electron-desktop-preview.zh.md)可以在 Windows 上从源码运行，但可分发应用不能依赖仓库检出、用户安装的 Node 或 workspace 链接。Windows 还需要使用 Windows Electron 文件和原生依赖构建安装包，并在相同操作系统上验证可执行文件。交叉编译产物无法证明内置 CLI 可以启动、renderer 可以加载或 `taskkill` 可以关闭已打包的进程树。
 
 ## Decision
 
-`pnpm desktop:exe` 在 Windows x64 上构建仓库，并生成 `apps/desktop/release/DeepSeek-Harness-Setup-<version>-x64.exe`。引导式用户级 NSIS 安装包会创建开始菜单和桌面快捷方式，并允许自定义安装目录。它包含 Windows Electron 应用、Windows x64 `node.exe`，以及与并行的[未签名 macOS 发行版](2026-08-15-unsigned-macos-desktop-distribution.md)相同的纯生产 `@deepseek-ai/dsh` 依赖闭包。打包后的主进程在 Windows 上选择 `runtime/bin/node.exe`。
+`pnpm desktop:exe` 在 Windows x64 上构建仓库，并生成 `apps/desktop/release/DeepSeek-Harness-Setup-<version>-x64.exe`。引导式用户级 NSIS 安装包会创建开始菜单和桌面快捷方式，并允许自定义安装目录。它包含 Windows Electron 应用、Windows x64 `node.exe`，以及与并行的[未签名 macOS 发行版](2026-08-15-unsigned-macos-desktop-distribution.zh.md)相同的纯生产 `@deepseek-ai/dsh` 依赖闭包。打包后的主进程在 Windows 上选择 `runtime/bin/node.exe`。
 
 共享打包模块会校验原生 Node 版本，要求 pnpm 生成 hoisted 生产部署，使包导入不依赖虚拟仓库链接；随后运行已部署 CLI、在 bundle 内部实体化两个 workspace override 包、移除不支持的 Landlock 链接，并拒绝所有仍然逃出运行时的依赖链接。Electron Builder 同时创建用于验证的解包应用和 NSIS 安装包。应用可执行文件和安装包都不包含 Authenticode 签名。
 

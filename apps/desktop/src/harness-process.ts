@@ -115,7 +115,7 @@ export class HarnessWebProcess {
 
     const child = spawn(
       this.options.executable,
-      [this.options.cliPath, 'web', '--host', '127.0.0.1', '--port', '0'],
+      [this.options.cliPath, 'web', '--host', '127.0.0.1', '--port', '0', '--no-open'],
       {
         cwd: this.options.cwd,
         env: this.options.env,

@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-15-unsigned-macos-desktop-distribution.md
 2026-08-15-unsigned-macos-desktop-distribution.md: 7de1067d12e725fc3f0f0b076bb1ecf4a581a025
-2026-08-15-unsigned-macos-desktop-distribution.zh.md: e0ade789a39c6a41df5259b19aff5adf125eca6b
+2026-08-15-unsigned-macos-desktop-distribution.zh.md: 732745fdbe5ca618b490f5c0ee0315bad07ec0e7

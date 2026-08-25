@@ -6,7 +6,7 @@
 
 源码模式支持 macOS、Linux 和 Windows。打包发行版包括未签名的 Apple 芯片 macOS DMG 和未签名的 Windows x64 NSIS 安装包；目前不发布 Linux 安装包。
 
-这个独立维护的社区应用不是 DeepSeek 官方发行版。它构建于 DeepSeek Harness workspace 内，因此保留上游 `@deepseek-ai` 包名；该名称表示源码兼容性，不代表本仓库通过 NPM 发布。上游归属说明见[仓库概述](../../README.md)。
+这个独立维护的社区应用不是 DeepSeek 官方发行版。它构建于 DeepSeek Harness workspace 内，因此保留上游 `@deepseek-ai` 包名；该名称表示源码兼容性，不代表本仓库通过 NPM 发布。上游归属说明见[仓库概述](../../README.zh.md)。
 
 ## 构建 macOS DMG
 

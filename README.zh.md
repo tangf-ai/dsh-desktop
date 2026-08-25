@@ -12,6 +12,8 @@ DSH Desktop 是一个独立维护的跨平台桌面应用，基于 [DeepSeek Har
 
 DSH Desktop 目前处于开发者预览阶段，可能发生破坏兼容性的变更。安装包支持 Apple 芯片 macOS 和 Windows x64；源码模式支持 macOS、Linux 和 Windows。
 
+<a id="run"></a>
+
 ## 运行
 
 ### 构建 macOS DMG
@@ -26,7 +28,7 @@ pnpm install
 pnpm desktop:dmg
 ```
 
-该命令生成 `apps/desktop/release/DeepSeek-Harness-<version>-arm64.dmg`。应用包含 Node 运行时和生产依赖，因此安装后无需 Node、pnpm 或仓库检出即可运行。安装与验证细节见[桌面应用参考](apps/desktop/README.md)。
+该命令生成 `apps/desktop/release/DeepSeek-Harness-<version>-arm64.dmg`。应用包含 Node 运行时和生产依赖，因此安装后无需 Node、pnpm 或仓库检出即可运行。安装与验证细节见[桌面应用参考](apps/desktop/README.zh.md)。
 
 ### 构建 Windows 安装包
 
@@ -37,6 +39,8 @@ pnpm desktop:exe
 ```
 
 该命令生成 `apps/desktop/release/DeepSeek-Harness-Setup-<version>-x64.exe`。安装包包含 Windows Electron 应用、Node 运行时和生产依赖。
+
+<a id="run-from-source"></a>
 
 ### 从源码运行
 
@@ -51,13 +55,13 @@ pnpm desktop
 
 ## 与 DeepSeek Harness 的关系
 
-本仓库保留完整的 DeepSeek Harness monorepo 和 Git 历史，因为 `apps/desktop` 直接使用其中的 workspace 包。桌面应用专属源码位于 [`apps/desktop`](apps/desktop/README.md)；相关集成改动让现有 CLI、Web profile、构建、文档与运行时依赖图保持一致。
+本仓库保留完整的 DeepSeek Harness monorepo 和 Git 历史，因为 `apps/desktop` 直接使用其中的 workspace 包。桌面应用专属源码位于 [`apps/desktop`](apps/desktop/README.zh.md)；相关集成改动让现有 CLI、Web profile、构建、文档与运行时依赖图保持一致。
 
 DeepSeek Harness 提供 agent harness（智能体框架）、CLI（命令行界面）、Web UI、插件架构与 `@deepseek-ai` 包。DSH Desktop 增加跨平台 Electron 进程管理、应用资源、原生安装包组装和已打包应用验证，不分叉 Harness 运行时或 Web 组合。
 
 ## 安全与限制
 
-macOS 镜像没有 Developer ID 证书签名，也未经过公证，因此 Gatekeeper 可能要求按住 Control 点击已安装应用并选择“打开”。Windows 安装包没有 Authenticode 签名，因此 Microsoft Defender SmartScreen 可能要求明确允许。当前应用使用操作系统分配的回环 HTTP/WebSocket 端口，不包含自动更新或崩溃报告服务。仓库不发布 Intel macOS、Windows arm64 或 Linux 安装包。[桌面应用参考](apps/desktop/README.md)说明 renderer 安全设置与进程生命周期。
+macOS 镜像没有 Developer ID 证书签名，也未经过公证，因此 Gatekeeper 可能要求按住 Control 点击已安装应用并选择“打开”。Windows 安装包没有 Authenticode 签名，因此 Microsoft Defender SmartScreen 可能要求明确允许。当前应用使用操作系统分配的回环 HTTP/WebSocket 端口，不包含自动更新或崩溃报告服务。仓库不发布 Intel macOS、Windows arm64 或 Linux 安装包。[桌面应用参考](apps/desktop/README.zh.md)说明 renderer 安全设置与进程生命周期。
 
 ## 社区与支持
 
@@ -66,11 +70,11 @@ macOS 镜像没有 Developer ID 证书签名，也未经过公证，因此 Gatek
 
 ## 参与贡献
 
-参见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+参见 [CONTRIBUTING.zh.md](CONTRIBUTING.zh.md)。
 
 ## 开发
 
-请先阅读[开发指南](docs/development.md)与[架构文档](docs/architecture.md)。面向 agent：请遵循 [AGENTS.md](AGENTS.md)。
+请先阅读[开发指南](docs/development.zh.md)与[架构文档](docs/architecture.zh.md)。面向 agent：请遵循 [AGENTS.md](AGENTS.md)。
 
 ## 许可证
 

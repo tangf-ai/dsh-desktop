@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-15-electron-desktop-preview.md
 2026-08-15-electron-desktop-preview.md: c63a524186703e9544b0844869b2c28ffa34e8d2
-2026-08-15-electron-desktop-preview.zh.md: 852fc0c56293a0c69efceadae0ed540c0e89397a
+2026-08-15-electron-desktop-preview.zh.md: 6f4c241df25c702d77883aed4fbe3992d278fd6b

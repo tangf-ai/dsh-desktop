@@ -13,8 +13,6 @@
  * `cordis.yml`, the Loader's `cordis:` builtin prefix, `cordis-config-entry`,
  * `@deepseek-ai/dsh-tool-cordis`, and `cordiverse/cordis`, and makes the
  * rewrite idempotent because the scoped name's `cordis` is preceded by `/`.
- * Registered runtime identifiers and per-file directory, locale, or preset ids
- * keep their upstream spelling even when the delimiter rule would match them.
  * Markdown follows the rename inside every fence, and in `docs/` prose too:
  * a tutorial that teaches an unresolvable name is wrong, while prose elsewhere
  * records what was true when it was written.
@@ -59,18 +57,6 @@ const RENAMES: readonly Rename[] = [
 
 const EXTENSIONS = ['.ts', '.tsx', '.js', '.mjs', '.cjs', '.tpl', '.json', '.yml', '.yaml', '.md'] as const
 
-/** Runtime protocol tokens that share Cordis's package-name prefix. */
-const PRESERVED_TOKENS = new Set([
-  'cordis/',
-  'cordis/*',
-  'cordis/dynamic-package',
-  'cordis/dynamic-retract',
-  'cordis/inspect-query',
-  'cordis/inspect-query-resolved',
-  'cordis/request-run',
-  'cordis/request-run-resolved',
-])
-
 /** An exact-string edit the token rule cannot express, with its required hit count. */
 interface ExactEdit {
   readonly id: string
@@ -93,14 +79,10 @@ interface GenericSkip {
 const GENERIC_SKIPS: readonly GenericSkip[] = [
   // `vendorPackages` lists vendor/ directory names, joined with 'vendor' below it.
   { file: 'packages/examples/acp-demo/tests/built-bin.e2e.ts', upstream: ['cordis', 'cosmokit', 'schemastery'] },
-  // These path components name directories under vendor/ and linked-packages/.
-  { file: 'apps/desktop/scripts/package-desktop.mjs', upstream: ['cosmokit', 'schemastery'] },
   // `Symbol.for('schemastery')` and the `vendor:` metadata field are upstream identifiers.
   { file: 'vendor/schemastery/src/index.ts', upstream: ['schemastery'] },
   // Asserts the vendored-manifest table, which gains an upstream-name column.
   { file: 'scripts/gen-third-party-notices.spec.ts', upstream: RENAMES.map(rename => rename.upstream) },
-  // Exercises both sides of the mapping as fixture data.
-  { file: 'scripts/rescope-vendor.spec.ts', upstream: RENAMES.map(rename => rename.upstream) },
   // `cordis` is also an agent-preset id — the directory name under
   // apps/cli/config/agent-presets/ — so in these files the bare name is
   // product data, not a package reference. Renaming it changed which preset
@@ -112,6 +94,10 @@ const GENERIC_SKIPS: readonly GenericSkip[] = [
   { file: 'packages/client/ui-agent-preset/tests/section.client.spec.tsx', upstream: ['cordis'] },
   { file: 'apps/cli/tests/web-agent-presets.e2e.ts', upstream: ['cordis'] },
   { file: 'apps/web/tests/agent-preset-authoring.e2e.ts', upstream: ['cordis'] },
+  // The desktop runtime packer copies vendor/cosmokit and vendor/schemastery
+  // by directory name and links them under those same names, so the strings
+  // are paths, not package specifiers.
+  { file: 'apps/desktop/scripts/package-desktop.mjs', upstream: ['cosmokit', 'schemastery'] },
   { file: 'packages/preset/agent-presets/tests/session.spec.ts', upstream: ['cordis'] },
   // The preset's own composition: its header comment and its system prompt name
   // the preset a model mounts, so the scoped name would send the model after an
@@ -122,16 +108,35 @@ const GENERIC_SKIPS: readonly GenericSkip[] = [
   // GROUP_ORDER holds `packages/<group>/` directory names, not package names.
   { file: 'scripts/gen-module-graph.ts', upstream: ['cordis'] },
   { file: 'scripts/gen-doc-graphs.ts', upstream: ['cordis'] },
-  // Locale namespaces, input-trigger labels, and catalog event-scope keys are
-  // product identifiers. The package references in mixed files use exact edits.
+  // `cordis/*` is the extensions event domain, not a package subpath. The
+  // generated catalogs and every producer/consumer must preserve that wire id.
+  { file: 'docs/event-producer-consumer.md', upstream: ['cordis'] },
+  { file: 'docs/event-producer-consumer.zh.md', upstream: ['cordis'] },
+  { file: 'docs/subsystems/extensions.md', upstream: ['cordis'] },
+  { file: 'docs/subsystems/extensions.zh.md', upstream: ['cordis'] },
+  { file: 'packages/api/remotes/src/remote-events.ts', upstream: ['cordis'] },
+  { file: 'packages/extensions/cordis-client-runner/src/client/index.ts', upstream: ['cordis'] },
+  { file: 'packages/extensions/cordis-client-runner/src/client/runtime.ts', upstream: ['cordis'] },
+  { file: 'packages/extensions/cordis-client-runner/tests/orchestrator.client.spec.ts', upstream: ['cordis'] },
+  { file: 'packages/extensions/cordis-client-runner/tests/plugin.client.spec.ts', upstream: ['cordis'] },
+  { file: 'packages/extensions/cordis-host-runner/src/index.ts', upstream: ['cordis'] },
+  { file: 'packages/extensions/cordis-host-runner/src/inspect-registry.ts', upstream: ['cordis'] },
+  { file: 'packages/extensions/cordis-host-runner/src/types.ts', upstream: ['cordis'] },
+  { file: 'packages/extensions/cordis-host-runner/tests/helpers.ts', upstream: ['cordis'] },
+  { file: 'packages/extensions/cordis-host-runner/tests/runner.spec.ts', upstream: ['cordis'] },
+  { file: 'packages/extensions/cordis-host-runner/tests/versioning.spec.ts', upstream: ['cordis'] },
+  { file: 'packages/extensions/tool-cordis/src/api-catalog.ts', upstream: ['cordis'] },
+  { file: 'packages/extensions/tool-cordis/src/providers.ts', upstream: ['cordis'] },
+  { file: 'packages/extensions/ui-cordis/src/client/index.ts', upstream: ['cordis'] },
+  { file: 'packages/extensions/ui-cordis/src/client/inventory.ts', upstream: ['cordis'] },
+  { file: 'scripts/gen-cordis-catalog.ts', upstream: ['cordis'] },
+  // The UI locale namespace and input-trigger source id are product keys.
   { file: 'packages/client/ui-settings-plugin-inventory/src/client/PluginInventorySettingsTab.tsx', upstream: ['cordis'] },
   { file: 'packages/extensions/ui-cordis/src/client/CordisActionRow.tsx', upstream: ['cordis'] },
   { file: 'packages/extensions/ui-cordis/src/client/CordisDefineRow.tsx', upstream: ['cordis'] },
   { file: 'packages/extensions/ui-cordis/src/client/CordisPanel.tsx', upstream: ['cordis'] },
   { file: 'packages/extensions/ui-cordis/src/client/CordisRunRow.tsx', upstream: ['cordis'] },
-  { file: 'packages/extensions/ui-cordis/src/client/index.ts', upstream: ['cordis'] },
   { file: 'packages/extensions/ui-cordis/src/client/locales.ts', upstream: ['cordis'] },
-  { file: 'scripts/gen-cordis-catalog.ts', upstream: ['cordis'] },
 ]
 
 /** A string that must appear exactly `count` times once the rescope has run. */
@@ -161,11 +166,6 @@ const POSTCONDITIONS: readonly PostCondition[] = [
   { file: 'apps/cli/config/agent-presets/cordis/agent.cordis.yml', text: 'The `cordis` agent preset', count: 1 },
   { file: 'apps/cli/config/agent-presets/cordis/agent.cordis.yml', text: 'corrupting the `cordis` preset', count: 1 },
   { file: 'packages/examples/acp-demo/tests/built-bin.e2e.ts', text: '\'cordis\', \'loader\', \'include\', \'timer\', \'hmr\', \'logger-console\',', count: 1 },
-  // Cordis-owned protocol, locale, catalog, and directory ids are not package names.
-  { file: 'packages/extensions/cordis-host-runner/src/types.ts', text: '\'cordis/request-run\'', count: 1 },
-  { file: 'packages/extensions/ui-cordis/src/client/locales.ts', text: "export const NS = 'cordis'", count: 1 },
-  { file: 'scripts/gen-cordis-catalog.ts', text: "  'cordis': 'extensions.md',", count: 1 },
-  { file: 'apps/desktop/scripts/package-desktop.mjs', text: "join(repositoryRoot, 'vendor', 'cosmokit')", count: 1 },
 ]
 
 /**
@@ -198,23 +198,6 @@ const EXACT_EDITS: readonly ExactEdit[] = [
     if (!dev) errors.push(\`\${label}: @deepseek-ai/cordis must also be a devDependency\`)
     if (peer && dev && peer !== dev) {
       errors.push(\`\${label}: @deepseek-ai/cordis peer (\${peer}) and dev (\${dev}) ranges must match\`)`,
-    expect: 1,
-  },
-  {
-    // The rescoped name is already covered by the `@deepseek-ai/.+` pattern beside it.
-    id: 'knip-logger-console',
-    file: 'knip.json',
-    find: `      "ignoreDependencies": [
-        "@cordisjs/plugin-logger-console",
-        "@deepseek-ai/.+"
-      ]
-    },
-    "packages/util/home": {`,
-    replace: `      "ignoreDependencies": [
-        "@deepseek-ai/.+"
-      ]
-    },
-    "packages/util/home": {`,
     expect: 1,
   },
   {
@@ -308,8 +291,8 @@ const EXACT_EDITS: readonly ExactEdit[] = [
     replace: `/**
  * Vendored framework libraries: rescoped into @deepseek-ai, so the gate below
  * would read them as plugin packages. They carry no cross-plugin runtime
- * identity to share — the framework itself is a platform module (external),
- * while these are ordinary libraries a browser bundle inlines.
+ * identity to share — the framework itself is a requested module-table row
+ * (external), while these are ordinary libraries a browser bundle inlines.
  */
 const VENDORED_LIBRARY = /^@deepseek-ai\\/(cosmokit|schemastery)(\\/|$)/
 
@@ -352,7 +335,7 @@ const VENDORED_LIBRARY = /^@deepseek-ai\\/(cosmokit|schemastery)(\\/|$)/
     id: 'vendoring-cookbook-name-invariant-zh',
     file: 'docs/cookbook/adding-a-vendored-package.zh.md',
     find: '保留上游的 `name`/`version`/`exports`/`type`',
-    replace: '改写 `name` 的 scope（[映射](../rescope.md)），保留上游的 `version`/`exports`/`type`',
+    replace: '改写 `name` 的 scope（[映射](../rescope.zh.md)），保留上游的 `version`/`exports`/`type`',
     expect: 1,
   },
   {
@@ -369,14 +352,6 @@ const VENDORED_LIBRARY = /^@deepseek-ai\\/(cosmokit|schemastery)(\\/|$)/
     find: "import { Context } from 'cordis'",
     replace: "import { Context } from '@deepseek-ai/cordis'",
     expect: 1,
-  },
-  {
-    // This file also owns the unscoped `cordis` event-family catalog key.
-    id: 'cordis-catalog-framework-merge-docs',
-    file: 'scripts/gen-cordis-catalog.ts',
-    find: "`declare module 'cordis'`",
-    replace: "`declare module '@deepseek-ai/cordis'`",
-    expect: 2,
   },
   {
     id: 'notices-vendored-row-type',
@@ -545,7 +520,6 @@ function patterns(reverse: boolean): Pattern[] {
 }
 
 function skipped(file: string, pattern: Pattern): boolean {
-  if (pattern.from !== pattern.upstream) return false
   return GENERIC_SKIPS.some(skip => skip.file === file && skip.upstream.includes(pattern.upstream))
 }
 
@@ -553,25 +527,10 @@ function rewriteLine(line: string, file: string, all: readonly Pattern[]): strin
   let out = line
   for (const pattern of all) {
     if (skipped(file, pattern)) continue
-    out = out.replace(pattern.token, (match, quote: string, subpath: string) => {
-      const semanticSubpath = subpath.endsWith('\\') ? subpath.slice(0, -1) : subpath
-      if (pattern.from === pattern.upstream && PRESERVED_TOKENS.has(`${pattern.upstream}${semanticSubpath}`)) return match
-      return `${quote}${pattern.to}${subpath}${quote}`
-    })
+    out = out.replace(pattern.token, (_match, quote: string, subpath: string) => `${quote}${pattern.to}${subpath}${quote}`)
     out = out.replace(pattern.yamlName, (_match, prefix: string, suffix: string) => `${prefix}${pattern.to}${suffix}`)
   }
   return out
-}
-
-/**
- * Apply the generic package-name rewrite to one source line.
- * @param line - source line to inspect.
- * @param file - repository-relative path used by per-file exclusions.
- * @param reverse - whether to restore upstream package names.
- * @returns The rewritten line, or the original line for a preserved identifier.
- */
-export function rewriteRescopeLine(line: string, file: string, reverse = false): string {
-  return rewriteLine(line, file, patterns(reverse))
 }
 
 /**
